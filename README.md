@@ -158,13 +158,27 @@ Two things the script handles that are easy to get wrong by hand:
   recomposed from two clean pieces: the extracted mark plus the wordmark lifted out of
   the wide art.
 
-Note that sharp reorders `trim()` and `extract()` when they are chained on one instance,
-which silently invalidates crop coordinates — every crop here therefore runs as two
-explicit passes.
+Note that sharp applies operations in its own fixed order, not the order you chain them:
+`trim()` runs before `extract()`, and `resize()` before `composite()`. Chaining either
+pair silently invalidates coordinates or throws, so every crop and overlay here runs as
+two explicit passes.
+
+Assets are emitted at roughly 2x their largest on-screen size and palette-compressed
+(the full set is ~130 KB), because images are served **unoptimized** — see below.
 
 Point `LOGO_WIDE` and `LOGO_SQUARE` at new art and re-run; nothing is hand-edited.
 Settings → General stores the logo and favicon paths, so the chrome logo can be
 repointed without a deploy.
+
+### Images are served unoptimized
+
+`next.config.ts` sets `images.unoptimized`. Vercel's image optimizer is metered, and once
+the plan quota is exhausted it answers every request with **HTTP 402**, which breaks each
+`<Image>` on the site — the failure looks like a missing file, not a billing problem.
+
+Nothing here needs the optimizer: brand assets are pre-sized by `npm run icons`, and
+catalogue imagery is already hosted and sized by the retailers. To re-enable it, remove
+the flag and add the retailer image hosts to `images.remotePatterns`.
 
 ### Wiki
 

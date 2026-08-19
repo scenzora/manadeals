@@ -17,6 +17,13 @@ const SOURCE_WIDE = process.env.LOGO_WIDE ?? "G:/Personal/Mana Deals/Mana Deals.
 const SOURCE_SQUARE = process.env.LOGO_SQUARE ?? "G:/Personal/Mana Deals/Mana Deals-square.png";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
+
+/**
+ * Images are served unoptimized (see next.config.ts), so everything here is
+ * emitted at the size it is actually displayed at — roughly 2x the largest
+ * on-screen height — and palette-compressed.
+ */
+const PNG_OUTPUT = { palette: true, quality: 90, effort: 10, compressionLevel: 9 } as const;
 const PUBLIC_DIR = path.join(ROOT, "public");
 const APP_DIR = path.join(ROOT, "src", "app");
 
@@ -94,7 +101,9 @@ async function buildCompactLockup(mark: Buffer) {
 
   const canvasWidth = (markMeta.width ?? 0) + gap + (wordMeta.width ?? 0);
 
-  return sharp({
+  // Composited first, then resized in a separate pass: sharp applies resize
+  // before composite when they are chained, which breaks the overlay bounds.
+  const composed = await sharp({
     create: {
       width: canvasWidth,
       height: CANVAS_HEIGHT,
@@ -110,7 +119,12 @@ async function buildCompactLockup(mark: Buffer) {
         top: Math.round((CANVAS_HEIGHT - (wordMeta.height ?? 0)) / 2),
       },
     ])
-    .png({ compressionLevel: 9 })
+    .png()
+    .toBuffer();
+
+  return sharp(composed)
+    .resize({ width: 600, withoutEnlargement: true }) // displayed at most 40px tall
+    .png(PNG_OUTPUT)
     .toBuffer();
 }
 
@@ -127,7 +141,7 @@ async function squareIcon(mark: Buffer, size: number, background = { r: 0, g: 0,
       right: size - inner - Math.round((size - inner) / 2),
       background,
     })
-    .png()
+    .png(PNG_OUTPUT)
     .toBuffer();
 }
 
@@ -178,14 +192,14 @@ async function main() {
 
   // 1. Wide wordmark for headers and the login screen.
   const wide = await sharp(await trimmed(SOURCE_WIDE))
-    .resize({ width: 720, withoutEnlargement: true })
-    .png({ compressionLevel: 9 })
+    .resize({ width: 560, withoutEnlargement: true }) // displayed at most 64px tall
+    .png(PNG_OUTPUT)
     .toBuffer();
   await record(path.join(PUBLIC_DIR, "logo.png"), wide);
 
   // 2. Square mark, used anywhere the slot is square.
   const mark = await extractMark();
-  await record(path.join(PUBLIC_DIR, "logo-mark.png"), await squareIcon(mark, 512));
+  await record(path.join(PUBLIC_DIR, "logo-mark.png"), await squareIcon(mark, 256));
 
   // 3. Compact lockup for app chrome, where the tagline would be unreadable.
   await record(path.join(PUBLIC_DIR, "logo-compact.png"), await buildCompactLockup(mark));
@@ -216,8 +230,9 @@ async function main() {
     create: { width: 1200, height: 630, channels: 4, background: NAVY },
   })
     .composite([{ input: ogLogo, gravity: "center" }])
-    .png({ compressionLevel: 9 })
+    .png(PNG_OUTPUT)
     .toBuffer();
+
   await record(path.join(PUBLIC_DIR, "og-image.png"), og);
 
   console.log("Generated:");
