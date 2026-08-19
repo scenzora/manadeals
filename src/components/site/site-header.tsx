@@ -85,7 +85,10 @@ export function SiteHeader({
 
       {/* Category bar */}
       <div className="hidden border-t border-[var(--border)] lg:block">
-        <div className="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4 sm:px-6">
+        {/* No overflow scrolling here: `overflow-x` forces `overflow-y` to
+            compute to `auto`, and this row is only 40px tall, so it would clip
+            the submenu panels entirely. Categories wrap instead. */}
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-1 px-4 sm:px-6">
           <Link
             href="/products"
             className="whitespace-nowrap px-3 py-2.5 text-sm font-medium hover:text-[var(--primary)]"
@@ -103,7 +106,7 @@ export function SiteHeader({
               </Link>
 
               {category.children.length > 0 ? (
-                <div className="invisible absolute left-0 top-full z-50 min-w-48 rounded-lg border border-[var(--border)] bg-[var(--card)] p-1.5 opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100">
+                <div className="invisible absolute left-0 top-full z-50 min-w-48 rounded-lg border border-[var(--border)] bg-[var(--card)] p-1.5 opacity-0 shadow-lg transition-all group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                   {category.children.map((child) => (
                     <Link
                       key={child._id}
