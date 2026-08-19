@@ -50,6 +50,8 @@ safe to re-run.
 | `npm run seed` | Roles, super admin, demo catalogue and 60 days of analytics |
 | `npm run seed:fresh` | Same, after clearing the seeded collections |
 | `npm run icons` | Regenerates logo, favicons and the OG image from the source art |
+| `npm run check:r2` | End-to-end check of the Cloudflare R2 setup (write, read, public URL, delete) |
+| `npm run r2:cors` | Shows the bucket CORS policy; `-- --apply` writes it |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
 
@@ -130,6 +132,40 @@ activity log with before/after values (secrets redacted).
 `productviews` collections: headline stats with period-over-period deltas, a bucketed time series
 (hour / day / week depending on the range), top products and categories, network split, and
 device / browser / country / referrer breakdowns.
+
+### Media storage (Cloudflare R2)
+
+Images live in a Cloudflare R2 bucket and are served from `media.manadeals.online`.
+Configure with:
+
+| Variable | Notes |
+| --- | --- |
+| `R2_ACCOUNT_ID` | Cloudflare account id |
+| `R2_BUCKET` | Bucket name |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | From R2 → Manage API Tokens |
+| `R2_ENDPOINT` | Optional; derived from the account id when blank |
+| `R2_PUBLIC_URL` | Public delivery origin (custom domain or `pub-*.r2.dev`) |
+
+Verify a new environment with `npm run check:r2` before trusting it — it round-trips a
+real object and checks the public URL separately, because an object can exist while the
+custom domain is not connected.
+
+**Two upload paths.** The primary one is a presigned `PUT` straight from the browser to
+R2 (`/api/admin/media/presign`): bytes never touch the app, so there is no serverless body
+limit and no origin bandwidth. That requires a CORS policy on the bucket — run
+`npm run r2:cors -- --apply` with an **Admin Read & Write** token, since object-scoped
+tokens cannot change bucket settings. If the browser cannot reach the bucket, the upload
+automatically retries through `/api/admin/media/upload`, which proxies via the server and
+is capped at 4 MB to stay inside serverless limits.
+
+Every object is recorded in the `Media` collection, which is what makes the library
+browsable, searchable and deletable. Keys are `folder/YYYY/MM/name-<random>.ext`, so an
+upload can never overwrite an existing object. Deleting checks whether any product,
+category, brand, banner or post still references the URL and refuses unless forced.
+
+> Deleted images can still serve from Cloudflare's cache for up to 4 hours
+> (`max-age=14400`). The object is gone from the bucket immediately — append a query
+> string to confirm.
 
 ### Brand assets
 

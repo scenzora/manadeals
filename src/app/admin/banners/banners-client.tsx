@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { Input, NativeSelect } from "@/components/ui/input";
 import { Field } from "@/components/ui/form-field";
+import { ImageField } from "@/components/forms/image-field";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ResourceDialog } from "@/components/forms/resource-dialog";
@@ -247,7 +248,7 @@ export function BannersClient({ session }: { session: AdminSession }) {
             : null
         }
       >
-        {({ register, formState: { errors } }) => (
+        {({ register, watch, setValue, formState: { errors } }) => (
           <>
             <Field label="Title" htmlFor="bannerTitle" error={errors.title?.message} required>
               <Input id="bannerTitle" {...register("title")} />
@@ -257,13 +258,22 @@ export function BannersClient({ session }: { session: AdminSession }) {
               <Input id="bannerSubtitle" {...register("subtitle")} />
             </Field>
 
-            <Field label="Desktop image URL" htmlFor="bannerDesktop" error={errors.desktopImage?.message}>
-              <Input id="bannerDesktop" placeholder="https://" {...register("desktopImage")} />
-            </Field>
+            <ImageField
+              label="Desktop image"
+              folder="banners"
+              aspect="wide"
+              value={String(watch("desktopImage") ?? "")}
+              onChange={(url) => setValue("desktopImage", url)}
+              error={errors.desktopImage?.message}
+            />
 
-            <Field label="Mobile image URL" htmlFor="bannerMobile" error={errors.mobileImage?.message}>
-              <Input id="bannerMobile" placeholder="https://" {...register("mobileImage")} />
-            </Field>
+            <ImageField
+              label="Mobile image"
+              folder="banners"
+              value={String(watch("mobileImage") ?? "")}
+              onChange={(url) => setValue("mobileImage", url)}
+              error={errors.mobileImage?.message}
+            />
 
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="CTA text" htmlFor="bannerCtaText" error={errors.ctaText?.message}>

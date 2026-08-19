@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { Input, NativeSelect, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/form-field";
+import { ImageField } from "@/components/forms/image-field";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ResourceDialog } from "@/components/forms/resource-dialog";
@@ -236,7 +237,7 @@ export function BlogClient({ session }: { session: AdminSession }) {
             : null
         }
       >
-        {({ register, setValue, formState: { errors } }) => (
+        {({ register, watch, setValue, formState: { errors } }) => (
           <>
             <Field label="Title" htmlFor="postTitle" error={errors.title?.message} required>
               <Input
@@ -266,13 +267,15 @@ export function BlogClient({ session }: { session: AdminSession }) {
             </Field>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field
-                label="Featured image URL"
-                htmlFor="postImage"
+              <ImageField
+                label="Featured image"
+                folder="blog"
+                aspect="wide"
+                value={String(watch("featuredImage") ?? "")}
+                onChange={(url) => setValue("featuredImage", url)}
                 error={errors.featuredImage?.message}
-              >
-                <Input id="postImage" placeholder="https://" {...register("featuredImage")} />
-              </Field>
+                className="sm:col-span-2"
+              />
               <Field
                 label="Tags"
                 htmlFor="postTags"

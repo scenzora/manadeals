@@ -17,6 +17,7 @@ import { slugify } from "@/lib/utils/slug";
 import { Button } from "@/components/ui/button";
 import { Input, NativeSelect, Textarea } from "@/components/ui/input";
 import { Field, ToggleRow } from "@/components/ui/form-field";
+import { ImageField, ImageListField } from "@/components/forms/image-field";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/admin/page-header";
@@ -409,30 +410,21 @@ export function ProductForm({
               <CardTitle>Media</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Field label="Thumbnail URL" htmlFor="thumbnail" error={errors.thumbnail?.message}>
-                <Input id="thumbnail" placeholder="https://" {...register("thumbnail")} />
-              </Field>
-              <Field
-                label="Gallery image URLs"
-                htmlFor="images"
-                hint="One URL per line"
+              <ImageField
+                label="Thumbnail"
+                folder="products"
+                value={String(watch("thumbnail") ?? "")}
+                onChange={(url) => setValue("thumbnail", url)}
+                error={errors.thumbnail?.message}
+                hint="Shown on cards and listings"
+              />
+              <ImageListField
+                label="Gallery"
+                folder="products"
+                value={(watch("images") ?? []) as string[]}
+                onChange={(urls) => setValue("images", urls)}
                 error={errors.images?.message}
-              >
-                <Textarea
-                  id="images"
-                  rows={4}
-                  defaultValue={(initialValues?.images ?? []).join("\n")}
-                  onChange={(event) =>
-                    setValue(
-                      "images",
-                      event.target.value
-                        .split("\n")
-                        .map((url) => url.trim())
-                        .filter(Boolean),
-                    )
-                  }
-                />
-              </Field>
+              />
             </CardContent>
           </Card>
 

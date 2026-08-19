@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { Input, NativeSelect, Textarea } from "@/components/ui/input";
 import { Field } from "@/components/ui/form-field";
+import { ImageField } from "@/components/forms/image-field";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ResourceDialog } from "@/components/forms/resource-dialog";
@@ -209,7 +210,7 @@ export function BrandsClient({ session }: { session: AdminSession }) {
             : null
         }
       >
-        {({ register, setValue, formState: { errors } }) => (
+        {({ register, watch, setValue, formState: { errors } }) => (
           <>
             <Field label="Brand name" htmlFor="brandName" error={errors.name?.message} required>
               <Input
@@ -225,14 +226,17 @@ export function BrandsClient({ session }: { session: AdminSession }) {
               <Input id="brandSlug" {...register("slug")} />
             </Field>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Logo URL" htmlFor="brandLogo" error={errors.logo?.message}>
-                <Input id="brandLogo" placeholder="https://" {...register("logo")} />
-              </Field>
-              <Field label="Website" htmlFor="brandWebsite" error={errors.website?.message}>
-                <Input id="brandWebsite" placeholder="https://" {...register("website")} />
-              </Field>
-            </div>
+            <ImageField
+              label="Brand logo"
+              folder="brands"
+              value={String(watch("logo") ?? "")}
+              onChange={(url) => setValue("logo", url)}
+              error={errors.logo?.message}
+            />
+
+            <Field label="Website" htmlFor="brandWebsite" error={errors.website?.message}>
+              <Input id="brandWebsite" placeholder="https://" {...register("website")} />
+            </Field>
 
             <Field label="Description" htmlFor="brandDescription" error={errors.description?.message}>
               <Textarea id="brandDescription" rows={3} {...register("description")} />

@@ -12,6 +12,7 @@ export { default as Category } from "./Category";
 export { default as Click } from "./Click";
 export { default as Coupon } from "./Coupon";
 export { default as Deal } from "./Deal";
+export { default as Media } from "./Media";
 export { default as Notification } from "./Notification";
 export { default as PriceHistory } from "./PriceHistory";
 export { default as Product } from "./Product";

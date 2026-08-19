@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { Input, NativeSelect, Textarea } from "@/components/ui/input";
 import { Field, ToggleRow } from "@/components/ui/form-field";
+import { ImageField } from "@/components/forms/image-field";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -373,10 +374,15 @@ function CategoryDialog({
             <Textarea id="categoryDescription" rows={2} {...register("description")} />
           </Field>
 
+          <ImageField
+            label="Category image"
+            folder="categories"
+            value={String(watch("image") ?? "")}
+            onChange={(url) => setValue("image", url)}
+            error={errors.image?.message}
+          />
+
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Image URL" htmlFor="categoryImage" error={errors.image?.message}>
-              <Input id="categoryImage" placeholder="https://" {...register("image")} />
-            </Field>
             <Field label="Status" htmlFor="categoryStatus" error={errors.status?.message}>
               <NativeSelect id="categoryStatus" {...register("status")}>
                 <option value="active">Active</option>

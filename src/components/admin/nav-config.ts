@@ -9,6 +9,7 @@ import {
   Flame,
   Globe,
   Image as ImageIcon,
+  Images,
   LayoutDashboard,
   Link2,
   ListTree,
@@ -78,6 +79,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Content",
     items: [
+      { label: "Media", href: "/admin/media", icon: Images, permissions: ["media.view"] },
       { label: "Banners", href: "/admin/banners", icon: ImageIcon, permissions: ["banners.view"] },
       { label: "Blog", href: "/admin/blog", icon: BookOpen, permissions: ["blog.view"] },
       { label: "SEO", href: "/admin/seo", icon: Globe, permissions: ["seo.view"] },

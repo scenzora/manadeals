@@ -16,6 +16,16 @@ const nextConfig: NextConfig = {
      * image hosts to `remotePatterns`.
      */
     unoptimized: true,
+
+    /**
+     * Declared for the day optimization is re-enabled: media.manadeals.online is
+     * the R2 custom domain, and pub-*.r2.dev is Cloudflare's fallback origin.
+     */
+    remotePatterns: [
+      { protocol: "https", hostname: "media.manadeals.online" },
+      { protocol: "https", hostname: "*.r2.dev" },
+      { protocol: "https", hostname: "picsum.photos" },
+    ],
   },
 };
 
