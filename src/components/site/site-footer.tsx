@@ -56,8 +56,8 @@ export function SiteFooter({
             <Image
               src={logo || "/logo.png"}
               alt={siteName}
-              width={720}
-              height={239}
+              width={1025}
+              height={240}
               className="h-10 w-auto object-contain"
             />
             <p className="max-w-xs text-sm">

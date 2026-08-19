@@ -16,7 +16,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           width={720}
           height={239}
           priority
-          className="h-12 w-auto self-start object-contain"
+          className="h-16 w-auto self-start object-contain"
         />
 
         <div className="space-y-4">

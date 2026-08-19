@@ -24,25 +24,93 @@ const APP_DIR = path.join(ROOT, "src", "app");
 const NAVY = { r: 16, g: 42, b: 67, alpha: 1 };
 
 /**
+ * Trims transparent margin in its own pass. sharp reorders `trim()` and
+ * `extract()` when they are chained on one instance, which makes crop
+ * coordinates meaningless, so every crop below works from a trimmed buffer.
+ */
+async function trimmed(source: string) {
+  return sharp(source).trim({ threshold: 10 }).png().toBuffer();
+}
+
+/**
  * The square lockup stacks the bag mark above the wordmark. Only the mark is
  * legible at favicon sizes, so crop the top portion and trim the leftover
  * transparent margin.
  */
 async function extractMark() {
-  const image = sharp(SOURCE_SQUARE);
-  const { width = 0, height = 0 } = await image.metadata();
+  const base = await trimmed(SOURCE_SQUARE);
+  const { width = 0, height = 0 } = await sharp(base).metadata();
 
-  const box = {
-    left: Math.round(width * 0.2),
-    top: Math.round(height * 0.02),
-    width: Math.round(width * 0.66),
-    height: Math.round(height * 0.535),
-  };
-
-  return sharp(SOURCE_SQUARE)
-    .extract(box)
-    .trim({ threshold: 10 })
+  const cropped = await sharp(base)
+    .extract({
+      left: Math.round(width * 0.2),
+      top: Math.round(height * 0.02),
+      width: Math.round(width * 0.66),
+      height: Math.round(height * 0.535),
+    })
     .png()
+    .toBuffer();
+
+  return sharp(cropped).trim({ threshold: 10 }).png().toBuffer();
+}
+
+/**
+ * The full lockup carries a tagline and a ".online" badge that turn to mud
+ * below ~60px, but the tagline sits *above* the bottom of the bag, so it cannot
+ * simply be cropped off. Instead, recompose a compact lockup from two clean
+ * pieces: the extracted bag mark and the wordmark lifted out of the wide art.
+ */
+async function buildCompactLockup(mark: Buffer) {
+  const base = await trimmed(SOURCE_WIDE);
+  const { width = 0, height = 0 } = await sharp(base).metadata();
+
+  const wordmarkCrop = await sharp(base)
+    .extract({
+      left: Math.round(width * 0.27),
+      top: Math.round(height * 0.24),
+      width: Math.round(width * 0.72),
+      height: Math.round(height * 0.36),
+    })
+    .png()
+    .toBuffer();
+
+  const wordmark = await sharp(wordmarkCrop).trim({ threshold: 10 }).png().toBuffer();
+
+  const CANVAS_HEIGHT = 240;
+  const MARK_HEIGHT = Math.round(CANVAS_HEIGHT * 0.92); // keeps the bag off the edge
+
+  const sizedMark = await sharp(mark)
+    .resize({ height: MARK_HEIGHT, withoutEnlargement: false })
+    .toBuffer();
+
+  // Keeps the wordmark-to-mark proportion of the original artwork.
+  const sizedWord = await sharp(wordmark)
+    .resize({ height: Math.round(MARK_HEIGHT * 0.5), withoutEnlargement: false })
+    .toBuffer();
+
+  const markMeta = await sharp(sizedMark).metadata();
+  const wordMeta = await sharp(sizedWord).metadata();
+  const gap = Math.round(CANVAS_HEIGHT * 0.05);
+
+  const canvasWidth = (markMeta.width ?? 0) + gap + (wordMeta.width ?? 0);
+
+  return sharp({
+    create: {
+      width: canvasWidth,
+      height: CANVAS_HEIGHT,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite([
+      { input: sizedMark, left: 0, top: Math.round((CANVAS_HEIGHT - (markMeta.height ?? 0)) / 2) },
+      {
+        input: sizedWord,
+        left: (markMeta.width ?? 0) + gap,
+        top: Math.round((CANVAS_HEIGHT - (wordMeta.height ?? 0)) / 2),
+      },
+    ])
+    .png({ compressionLevel: 9 })
     .toBuffer();
 }
 
@@ -109,8 +177,7 @@ async function main() {
   };
 
   // 1. Wide wordmark for headers and the login screen.
-  const wide = await sharp(SOURCE_WIDE)
-    .trim({ threshold: 10 })
+  const wide = await sharp(await trimmed(SOURCE_WIDE))
     .resize({ width: 720, withoutEnlargement: true })
     .png({ compressionLevel: 9 })
     .toBuffer();
@@ -120,7 +187,10 @@ async function main() {
   const mark = await extractMark();
   await record(path.join(PUBLIC_DIR, "logo-mark.png"), await squareIcon(mark, 512));
 
-  // 3. Favicons. Next.js serves these automatically from src/app.
+  // 3. Compact lockup for app chrome, where the tagline would be unreadable.
+  await record(path.join(PUBLIC_DIR, "logo-compact.png"), await buildCompactLockup(mark));
+
+  // 4. Favicons. Next.js serves these automatically from src/app.
   const ico16 = await squareIcon(mark, 16);
   const ico32 = await squareIcon(mark, 32);
   const ico48 = await squareIcon(mark, 48);
@@ -134,12 +204,11 @@ async function main() {
   );
   await record(path.join(APP_DIR, "icon.png"), await squareIcon(mark, 96));
 
-  // 4. Apple touch icon: iOS ignores transparency, so give it the navy tile.
+  // 5. Apple touch icon: iOS ignores transparency, so give it the navy tile.
   await record(path.join(APP_DIR, "apple-icon.png"), await squareIcon(mark, 180, NAVY));
 
-  // 5. Open Graph / Twitter card image: wordmark centred on brand navy.
-  const ogLogo = await sharp(SOURCE_WIDE)
-    .trim({ threshold: 10 })
+  // 6. Open Graph / Twitter card image: wordmark centred on brand navy.
+  const ogLogo = await sharp(await trimmed(SOURCE_WIDE))
     .resize({ width: 820, withoutEnlargement: true })
     .toBuffer();
 

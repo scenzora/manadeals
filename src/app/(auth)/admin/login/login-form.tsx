@@ -47,10 +47,10 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
     <div className="space-y-8">
       <div className="space-y-2">
         <Image
-          src="/logo.png"
+          src="/logo-compact.png"
           alt="ManaDeals.online"
-          width={720}
-          height={239}
+          width={1025}
+          height={240}
           priority
           className="mb-2 h-10 w-auto object-contain lg:hidden"
         />

@@ -72,10 +72,10 @@ export function AdminShell({
         <div className="flex h-16 items-center justify-between gap-2 border-b border-white/10 px-4">
           <Link href="/admin" className="flex items-center" aria-label="ManaDeals admin">
             <Image
-              src="/logo.png"
+              src="/logo-compact.png"
               alt="ManaDeals"
-              width={720}
-              height={239}
+              width={1025}
+              height={240}
               priority
               className="h-8 w-auto object-contain"
             />

@@ -141,17 +141,30 @@ npm run icons
 
 | Output | Used by |
 | --- | --- |
-| `public/logo.png` | Storefront header and footer, admin sidebar, login screen |
+| `public/logo.png` | Full lockup with tagline — auth panel, anywhere it renders large |
+| `public/logo-compact.png` | Mark + wordmark, no tagline — storefront header/footer, admin sidebar |
 | `public/logo-mark.png` | Square 512px mark, for any square slot |
 | `src/app/favicon.ico` | `/favicon.ico` — 16/32/48px, PNG-in-ICO |
 | `src/app/icon.png` | Modern browser tab icon (96px) |
 | `src/app/apple-icon.png` | iOS home screen (180px, navy tile — iOS ignores transparency) |
 | `public/og-image.png` | Open Graph / Twitter card (1200x630, wordmark on brand navy) |
 
-The square source is a stacked lockup, so the script crops it to the bag mark before
-building icons — the wordmark is unreadable below about 64px. Point `LOGO_WIDE` and
-`LOGO_SQUARE` at new art and re-run; nothing is hand-edited. Settings → General also
-stores the logo and favicon paths, so they can be repointed without a deploy.
+Two things the script handles that are easy to get wrong by hand:
+
+- **The square source is a stacked lockup**, so it is cropped to the bag mark before
+  building icons — the wordmark is unreadable below about 64px.
+- **The full lockup's tagline turns to mud under ~60px**, but it sits *above* the bottom
+  of the bag, so it cannot simply be cropped off. `logo-compact.png` is instead
+  recomposed from two clean pieces: the extracted mark plus the wordmark lifted out of
+  the wide art.
+
+Note that sharp reorders `trim()` and `extract()` when they are chained on one instance,
+which silently invalidates crop coordinates — every crop here therefore runs as two
+explicit passes.
+
+Point `LOGO_WIDE` and `LOGO_SQUARE` at new art and re-run; nothing is hand-edited.
+Settings → General stores the logo and favicon paths, so the chrome logo can be
+repointed without a deploy.
 
 ### Wiki
 

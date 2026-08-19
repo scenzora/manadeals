@@ -583,7 +583,7 @@ async function seedContent(adminId: mongoose.Types.ObjectId, categories: Map<str
         general: {
           siteName: process.env.NEXT_PUBLIC_SITE_NAME || "ManaDeals.online",
           tagline: "Smart deals, every day.",
-          logo: "/logo.png",
+          logo: "/logo-compact.png",
           favicon: "/favicon.ico",
           contactEmail: process.env.SEED_ADMIN_EMAIL || "admin@manadeals.online",
         },

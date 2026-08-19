@@ -54,8 +54,8 @@ export function SiteHeader({
           <Image
             src={logo || "/logo.png"}
             alt={siteName}
-            width={720}
-            height={239}
+            width={1025}
+            height={240}
             priority
             className="h-9 w-auto object-contain sm:h-10"
           />
