@@ -49,6 +49,7 @@ safe to re-run.
 | `npm run build` / `npm start` | Production build and server |
 | `npm run seed` | Roles, super admin, demo catalogue and 60 days of analytics |
 | `npm run seed:fresh` | Same, after clearing the seeded collections |
+| `npm run icons` | Regenerates logo, favicons and the OG image from the source art |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
 
@@ -129,6 +130,28 @@ activity log with before/after values (secrets redacted).
 `productviews` collections: headline stats with period-over-period deltas, a bucketed time series
 (hour / day / week depending on the range), top products and categories, network split, and
 device / browser / country / referrer breakdowns.
+
+### Brand assets
+
+All brand imagery is generated from two source files by `scripts/generate-icons.ts`:
+
+```bash
+npm run icons
+```
+
+| Output | Used by |
+| --- | --- |
+| `public/logo.png` | Storefront header and footer, admin sidebar, login screen |
+| `public/logo-mark.png` | Square 512px mark, for any square slot |
+| `src/app/favicon.ico` | `/favicon.ico` — 16/32/48px, PNG-in-ICO |
+| `src/app/icon.png` | Modern browser tab icon (96px) |
+| `src/app/apple-icon.png` | iOS home screen (180px, navy tile — iOS ignores transparency) |
+| `public/og-image.png` | Open Graph / Twitter card (1200x630, wordmark on brand navy) |
+
+The square source is a stacked lockup, so the script crops it to the bag mark before
+building icons — the wordmark is unreadable below about 64px. Point `LOGO_WIDE` and
+`LOGO_SQUARE` at new art and re-run; nothing is hand-edited. Settings → General also
+stores the logo and favicon paths, so they can be repointed without a deploy.
 
 ### Wiki
 

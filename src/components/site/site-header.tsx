@@ -49,17 +49,16 @@ export function SiteHeader({
           {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
 
-        <Link href="/" className="flex shrink-0 items-center gap-2">
+        <Link href="/" className="flex shrink-0 items-center" aria-label={siteName}>
+          {/* The logo already contains the wordmark, so no text label beside it. */}
           <Image
             src={logo || "/logo.png"}
             alt={siteName}
-            width={36}
-            height={36}
-            className="size-9 rounded-lg object-contain"
+            width={720}
+            height={239}
+            priority
+            className="h-9 w-auto object-contain sm:h-10"
           />
-          <span className="text-lg font-semibold tracking-tight">
-            Mana<span className="text-[var(--primary)]">Deals</span>
-          </span>
         </Link>
 
         <form onSubmit={submitSearch} className="relative ml-2 hidden flex-1 md:block">

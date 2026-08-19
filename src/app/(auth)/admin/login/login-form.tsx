@@ -46,18 +46,14 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   return (
     <div className="space-y-8">
       <div className="space-y-2">
-        <div className="flex items-center gap-3 lg:hidden">
-          <Image
-            src="/logo.png"
-            alt="ManaDeals"
-            width={40}
-            height={40}
-            className="size-10 rounded-lg object-contain"
-          />
-          <span className="text-lg font-semibold">
-            Mana<span className="text-[var(--primary)]">Deals</span>.online
-          </span>
-        </div>
+        <Image
+          src="/logo.png"
+          alt="ManaDeals.online"
+          width={720}
+          height={239}
+          priority
+          className="mb-2 h-10 w-auto object-contain lg:hidden"
+        />
         <h1 className="text-2xl font-semibold tracking-tight">Sign in to the admin panel</h1>
         <p className="text-sm text-[var(--muted-foreground)]">
           Use your ManaDeals administrator credentials to continue.

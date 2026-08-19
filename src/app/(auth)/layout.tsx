@@ -10,18 +10,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </div>
 
       <div className="relative hidden bg-[var(--secondary)] lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <div className="flex items-center gap-3">
-          <Image
-            src="/logo.png"
-            alt="ManaDeals"
-            width={44}
-            height={44}
-            className="size-11 rounded-lg bg-white object-contain p-1"
-          />
-          <span className="text-lg font-semibold text-white">
-            Mana<span className="text-[var(--primary)]">Deals</span>.online
-          </span>
-        </div>
+        <Image
+          src="/logo.png"
+          alt="ManaDeals.online"
+          width={720}
+          height={239}
+          priority
+          className="h-12 w-auto self-start object-contain"
+        />
 
         <div className="space-y-4">
           <h2 className="text-3xl font-semibold leading-tight text-white">

@@ -1,0 +1,161 @@
+/**
+ * Generates every brand asset the app needs from the two source logo files.
+ *
+ *   npm run icons
+ *
+ * Sources (override with LOGO_WIDE / LOGO_SQUARE env vars):
+ *   - a wide wordmark lockup  → header, login, OG image
+ *   - a square stacked lockup → cropped to the bag mark for icons and favicons
+ *
+ * Re-run this whenever the logo changes; nothing here is hand-edited.
+ */
+import fs from "node:fs/promises";
+import path from "node:path";
+import sharp from "sharp";
+
+const SOURCE_WIDE = process.env.LOGO_WIDE ?? "G:/Personal/Mana Deals/Mana Deals.png";
+const SOURCE_SQUARE = process.env.LOGO_SQUARE ?? "G:/Personal/Mana Deals/Mana Deals-square.png";
+
+const ROOT = path.resolve(import.meta.dirname, "..");
+const PUBLIC_DIR = path.join(ROOT, "public");
+const APP_DIR = path.join(ROOT, "src", "app");
+
+/** Navy from the brand palette, used where transparency is not allowed. */
+const NAVY = { r: 16, g: 42, b: 67, alpha: 1 };
+
+/**
+ * The square lockup stacks the bag mark above the wordmark. Only the mark is
+ * legible at favicon sizes, so crop the top portion and trim the leftover
+ * transparent margin.
+ */
+async function extractMark() {
+  const image = sharp(SOURCE_SQUARE);
+  const { width = 0, height = 0 } = await image.metadata();
+
+  const box = {
+    left: Math.round(width * 0.2),
+    top: Math.round(height * 0.02),
+    width: Math.round(width * 0.66),
+    height: Math.round(height * 0.535),
+  };
+
+  return sharp(SOURCE_SQUARE)
+    .extract(box)
+    .trim({ threshold: 10 })
+    .png()
+    .toBuffer();
+}
+
+/** Pads a buffer into a square canvas of `size`, keeping the aspect ratio. */
+async function squareIcon(mark: Buffer, size: number, background = { r: 0, g: 0, b: 0, alpha: 0 }) {
+  const inner = Math.round(size * 0.86); // a little breathing room inside the tile
+
+  return sharp(mark)
+    .resize(inner, inner, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .extend({
+      top: Math.round((size - inner) / 2),
+      bottom: size - inner - Math.round((size - inner) / 2),
+      left: Math.round((size - inner) / 2),
+      right: size - inner - Math.round((size - inner) / 2),
+      background,
+    })
+    .png()
+    .toBuffer();
+}
+
+/**
+ * Wraps PNGs in an ICO container. Every modern browser reads PNG-in-ICO, which
+ * avoids hand-rolling a BMP encoder.
+ */
+function buildIco(images: { size: number; data: Buffer }[]) {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0); // reserved
+  header.writeUInt16LE(1, 2); // type: icon
+  header.writeUInt16LE(images.length, 4);
+
+  const entries: Buffer[] = [];
+  let offset = 6 + images.length * 16;
+
+  for (const image of images) {
+    const entry = Buffer.alloc(16);
+    entry.writeUInt8(image.size >= 256 ? 0 : image.size, 0);
+    entry.writeUInt8(image.size >= 256 ? 0 : image.size, 1);
+    entry.writeUInt8(0, 2); // palette
+    entry.writeUInt8(0, 3); // reserved
+    entry.writeUInt16LE(1, 4); // colour planes
+    entry.writeUInt16LE(32, 6); // bits per pixel
+    entry.writeUInt32LE(image.data.length, 8);
+    entry.writeUInt32LE(offset, 12);
+    entries.push(entry);
+    offset += image.data.length;
+  }
+
+  return Buffer.concat([header, ...entries, ...images.map((image) => image.data)]);
+}
+
+async function main() {
+  for (const file of [SOURCE_WIDE, SOURCE_SQUARE]) {
+    await fs.access(file).catch(() => {
+      throw new Error(`Source logo not found: ${file}`);
+    });
+  }
+
+  await fs.mkdir(PUBLIC_DIR, { recursive: true });
+  const written: string[] = [];
+
+  const record = async (target: string, data: Buffer) => {
+    await fs.writeFile(target, data);
+    written.push(`${path.relative(ROOT, target)} (${(data.length / 1024).toFixed(1)} KB)`);
+  };
+
+  // 1. Wide wordmark for headers and the login screen.
+  const wide = await sharp(SOURCE_WIDE)
+    .trim({ threshold: 10 })
+    .resize({ width: 720, withoutEnlargement: true })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+  await record(path.join(PUBLIC_DIR, "logo.png"), wide);
+
+  // 2. Square mark, used anywhere the slot is square.
+  const mark = await extractMark();
+  await record(path.join(PUBLIC_DIR, "logo-mark.png"), await squareIcon(mark, 512));
+
+  // 3. Favicons. Next.js serves these automatically from src/app.
+  const ico16 = await squareIcon(mark, 16);
+  const ico32 = await squareIcon(mark, 32);
+  const ico48 = await squareIcon(mark, 48);
+  await record(
+    path.join(APP_DIR, "favicon.ico"),
+    buildIco([
+      { size: 16, data: ico16 },
+      { size: 32, data: ico32 },
+      { size: 48, data: ico48 },
+    ]),
+  );
+  await record(path.join(APP_DIR, "icon.png"), await squareIcon(mark, 96));
+
+  // 4. Apple touch icon: iOS ignores transparency, so give it the navy tile.
+  await record(path.join(APP_DIR, "apple-icon.png"), await squareIcon(mark, 180, NAVY));
+
+  // 5. Open Graph / Twitter card image: wordmark centred on brand navy.
+  const ogLogo = await sharp(SOURCE_WIDE)
+    .trim({ threshold: 10 })
+    .resize({ width: 820, withoutEnlargement: true })
+    .toBuffer();
+
+  const og = await sharp({
+    create: { width: 1200, height: 630, channels: 4, background: NAVY },
+  })
+    .composite([{ input: ogLogo, gravity: "center" }])
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+  await record(path.join(PUBLIC_DIR, "og-image.png"), og);
+
+  console.log("Generated:");
+  for (const line of written) console.log(`  ${line}`);
+}
+
+main().catch((error) => {
+  console.error("Icon generation failed:", error);
+  process.exit(1);
+});

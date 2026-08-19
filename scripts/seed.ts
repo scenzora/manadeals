@@ -584,6 +584,7 @@ async function seedContent(adminId: mongoose.Types.ObjectId, categories: Map<str
           siteName: process.env.NEXT_PUBLIC_SITE_NAME || "ManaDeals.online",
           tagline: "Smart deals, every day.",
           logo: "/logo.png",
+          favicon: "/favicon.ico",
           contactEmail: process.env.SEED_ADMIN_EMAIL || "admin@manadeals.online",
         },
         seo: {
@@ -591,6 +592,7 @@ async function seedContent(adminId: mongoose.Types.ObjectId, categories: Map<str
           description:
             "Handpicked deals, coupons and price drops across Amazon, Flipkart and other affiliate stores.",
           keywords: ["deals", "offers", "amazon", "flipkart", "coupons", "india"],
+          ogImage: "/og-image.png",
         },
       },
     },

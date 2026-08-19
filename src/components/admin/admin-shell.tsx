@@ -70,17 +70,15 @@ export function AdminShell({
         )}
       >
         <div className="flex h-16 items-center justify-between gap-2 border-b border-white/10 px-4">
-          <Link href="/admin" className="flex items-center gap-2">
+          <Link href="/admin" className="flex items-center" aria-label="ManaDeals admin">
             <Image
               src="/logo.png"
               alt="ManaDeals"
-              width={32}
-              height={32}
-              className="size-8 rounded-md bg-white object-contain p-0.5"
+              width={720}
+              height={239}
+              priority
+              className="h-8 w-auto object-contain"
             />
-            <span className="text-sm font-semibold text-white">
-              Mana<span className="text-[var(--sidebar-active)]">Deals</span>
-            </span>
           </Link>
           <button
             className="rounded-md p-1 text-white/70 hover:bg-white/10 lg:hidden"

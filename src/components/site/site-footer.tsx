@@ -53,18 +53,13 @@ export function SiteFooter({
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid gap-8 md:grid-cols-4">
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Image
-                src={logo || "/logo.png"}
-                alt={siteName}
-                width={36}
-                height={36}
-                className="size-9 rounded-lg bg-white object-contain p-1"
-              />
-              <span className="text-lg font-semibold text-white">
-                Mana<span className="text-[var(--primary)]">Deals</span>
-              </span>
-            </div>
+            <Image
+              src={logo || "/logo.png"}
+              alt={siteName}
+              width={720}
+              height={239}
+              className="h-10 w-auto object-contain"
+            />
             <p className="max-w-xs text-sm">
               {tagline || "Handpicked deals and price drops from Amazon, Flipkart and more."}
             </p>

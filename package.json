@@ -9,7 +9,8 @@
     "lint": "eslint",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "seed:fresh": "tsx --env-file=.env.local scripts/seed.ts -- --fresh",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "icons": "tsx scripts/generate-icons.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
