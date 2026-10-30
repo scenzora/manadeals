@@ -5,6 +5,7 @@ import Tenant from "@/models/Tenant";
 import TenantDomain from "@/models/TenantDomain";
 import { ROOT_DOMAIN } from "@/lib/tenant/host";
 import { sanitizeTheme } from "@/lib/tenant/theme";
+import { managedHostnames } from "@/lib/domains/dns";
 import { createTenantResolver, type PublicTenant, type TenantLookup } from "@/lib/tenant/resolve";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -51,7 +52,7 @@ const lookup: TenantLookup = async (target) => {
       .lean();
     // A Pro store with a verified primary domain reports that as canonical.
     const useCustom = tenant.plan === "pro" && primary;
-    return toPublicTenant(tenant, useCustom ? primary.hostname : `${tenant.slug}.${ROOT_DOMAIN}`);
+    return toPublicTenant(tenant, useCustom ? managedHostnames(primary.hostname).primary : `${tenant.slug}.${ROOT_DOMAIN}`);
   }
 
   // Custom domains only resolve once verified, and only for Pro stores.
@@ -59,7 +60,7 @@ const lookup: TenantLookup = async (target) => {
   if (!domain) return null;
   const tenant = await Tenant.findById(domain.tenant).lean();
   if (!tenant || tenant.plan !== "pro") return null;
-  return toPublicTenant(tenant, target.hostname);
+  return toPublicTenant(tenant, managedHostnames(target.hostname).primary);
 };
 
 const globalWithResolver = globalThis as typeof globalThis & {

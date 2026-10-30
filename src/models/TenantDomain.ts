@@ -9,6 +9,12 @@ const TenantDomainSchema = new Schema(
     verificationStatus: { type: String, enum: ["pending", "verified", "failed"], default: "pending", index: true },
     sslStatus: { type: String, enum: ["pending", "active", "failed"], default: "pending" },
     verifiedAt: { type: Date, default: null },
+    /** Ownership-proof records the provider asked for (usually a TXT), shown in the dashboard. */
+    verificationRecords: {
+      type: [new Schema({ type: String, domain: String, value: String }, { _id: false })],
+      default: [],
+    },
+    failedChecks: { type: Number, default: 0 },
     lastCheckedAt: { type: Date, default: null },
     lastError: { type: String, default: "" },
   },
