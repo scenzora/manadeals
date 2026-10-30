@@ -20,8 +20,8 @@ function percentChange(current: number, previous: number) {
 /** Headline counters, each with a period-over-period delta. */
 export async function getDashboardStats(range: DateRange) {
   const previous = previousRange(range);
-  const rangeMatch = { clickedAt: { $gte: range.from, $lte: range.to } };
-  const previousMatch = { clickedAt: { $gte: previous.from, $lte: previous.to } };
+  const rangeMatch = { tenant: null, clickedAt: { $gte: range.from, $lte: range.to } };
+  const previousMatch = { tenant: null, clickedAt: { $gte: previous.from, $lte: previous.to } };
 
   const [
     totalProducts,
@@ -65,8 +65,9 @@ export async function getDashboardStats(range: DateRange) {
   const previousRevenue = priorClicks[0]?.revenue ?? 0;
 
   const [lifetimeClicks, lifetimeRevenue] = await Promise.all([
-    Click.estimatedDocumentCount(),
+    Click.countDocuments({ tenant: null }),
     Click.aggregate<{ revenue: number }>([
+      { $match: { tenant: null } },
       { $group: { _id: null, revenue: { $sum: "$estimatedRevenue" } } },
     ]),
   ]);
@@ -98,7 +99,7 @@ export async function getTimeSeries(range: DateRange): Promise<SeriesPoint[]> {
 
   const [clickSeries, viewSeries] = await Promise.all([
     Click.aggregate<{ _id: string; clicks: number; revenue: number }>([
-      { $match: { clickedAt: { $gte: range.from, $lte: range.to } } },
+      { $match: { tenant: null, clickedAt: { $gte: range.from, $lte: range.to } } },
       {
         $group: {
           _id: { $dateToString: { format, date: "$clickedAt" } },
@@ -135,7 +136,7 @@ export async function getTimeSeries(range: DateRange): Promise<SeriesPoint[]> {
 
 export async function getTopProducts(range: DateRange, limit = 8) {
   return Click.aggregate<NamedValue & { id: string }>([
-    { $match: { clickedAt: { $gte: range.from, $lte: range.to }, product: { $ne: null } } },
+    { $match: { tenant: null, clickedAt: { $gte: range.from, $lte: range.to }, product: { $ne: null } } },
     { $group: { _id: "$product", value: { $sum: 1 }, secondary: { $sum: "$estimatedRevenue" } } },
     { $sort: { value: -1 } },
     { $limit: limit },
@@ -155,7 +156,7 @@ export async function getTopProducts(range: DateRange, limit = 8) {
 
 export async function getTopCategories(range: DateRange, limit = 6) {
   return Click.aggregate<NamedValue>([
-    { $match: { clickedAt: { $gte: range.from, $lte: range.to }, product: { $ne: null } } },
+    { $match: { tenant: null, clickedAt: { $gte: range.from, $lte: range.to }, product: { $ne: null } } },
     { $lookup: { from: "products", localField: "product", foreignField: "_id", as: "product" } },
     { $unwind: "$product" },
     { $group: { _id: "$product.category", value: { $sum: 1 } } },
@@ -169,7 +170,7 @@ export async function getTopCategories(range: DateRange, limit = 6) {
 
 export async function getNetworkBreakdown(range: DateRange) {
   return Click.aggregate<NamedValue>([
-    { $match: { clickedAt: { $gte: range.from, $lte: range.to }, affiliateNetwork: { $ne: null } } },
+    { $match: { tenant: null, clickedAt: { $gte: range.from, $lte: range.to }, affiliateNetwork: { $ne: null } } },
     { $group: { _id: "$affiliateNetwork", value: { $sum: 1 }, secondary: { $sum: "$estimatedRevenue" } } },
     { $sort: { value: -1 } },
     { $lookup: { from: "affiliatenetworks", localField: "_id", foreignField: "_id", as: "network" } },
@@ -180,7 +181,7 @@ export async function getNetworkBreakdown(range: DateRange) {
 
 export async function getSegmentBreakdown(range: DateRange, field: "device" | "browser" | "country" | "referrer") {
   return Click.aggregate<NamedValue>([
-    { $match: { clickedAt: { $gte: range.from, $lte: range.to } } },
+    { $match: { tenant: null, clickedAt: { $gte: range.from, $lte: range.to } } },
     { $group: { _id: `$${field}`, value: { $sum: 1 } } },
     { $sort: { value: -1 } },
     { $limit: 8 },
@@ -196,7 +197,7 @@ export async function getProductPerformance(range: DateRange, limit = 20) {
     revenue: number;
     conversions: number;
   }>([
-    { $match: { clickedAt: { $gte: range.from, $lte: range.to }, product: { $ne: null } } },
+    { $match: { tenant: null, clickedAt: { $gte: range.from, $lte: range.to }, product: { $ne: null } } },
     {
       $group: {
         _id: "$product",

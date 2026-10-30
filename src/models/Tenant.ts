@@ -26,6 +26,20 @@ const TenantSchema = new Schema(
       mode: { type: String, enum: ["light", "dark", "auto"], default: DEFAULT_THEME.mode },
     },
 
+    /**
+     * Affiliate ids. `select: false` keeps them out of every query unless the
+     * caller asks with `+affiliate`, so they cannot leak into public payloads.
+     */
+    affiliate: {
+      amazonAssociateTag: { type: String, default: "", select: false },
+      flipkartAffiliateId: { type: String, default: "", select: false },
+      generic: {
+        type: [new Schema({ network: { type: String, required: true }, id: { type: String, required: true } }, { _id: false })],
+        default: [],
+        select: false,
+      },
+    },
+
     branding: {
       logoUrl: { type: String, default: "" },
       faviconUrl: { type: String, default: "" },

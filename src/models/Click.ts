@@ -8,6 +8,11 @@ const ClickSchema = new Schema(
     coupon: { type: Types.ObjectId, ref: "Coupon", default: null },
     category: { type: Types.ObjectId, ref: "Category", default: null, index: true },
     affiliateNetwork: { type: Types.ObjectId, ref: "AffiliateNetwork", default: null, index: true },
+    /** White-label store that served this click; null for the main site. */
+    tenant: { type: Types.ObjectId, ref: "Tenant", default: null, index: true },
+    retailer: { type: String, default: "" },
+    /** Whose affiliate tag the visitor was sent out with. */
+    tagSource: { type: String, enum: ["tenant", "platform", "none", ""], default: "" },
     user: { type: Types.ObjectId, ref: "User", default: null, index: true },
 
     sessionId: { type: String, default: "" },
@@ -29,6 +34,7 @@ const ClickSchema = new Schema(
 );
 
 ClickSchema.index({ clickedAt: -1, affiliateNetwork: 1 });
+ClickSchema.index({ tenant: 1, clickedAt: -1 });
 ClickSchema.index({ product: 1, clickedAt: -1 });
 
 export type ClickDoc = InferSchemaType<typeof ClickSchema>;

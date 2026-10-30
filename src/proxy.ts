@@ -43,8 +43,13 @@ export function proxy(request: NextRequest) {
   }
 
   // Public main-site pages keep their previous behaviour (no extra headers).
-  if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/admin")) return NextResponse.next();
-  return withSecurityHeaders(NextResponse.next());
+  // The tenant header is set only for store hosts; never trust one sent from outside.
+  const headers = new Headers(request.headers);
+  headers.delete("x-tenant-host");
+  if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/admin")) {
+    return NextResponse.next({ request: { headers } });
+  }
+  return withSecurityHeaders(NextResponse.next({ request: { headers } }));
 }
 
 /** Files such as /logo.png are served as-is; only sitemap and robots are tenant-specific. */

@@ -49,6 +49,10 @@ export async function recordClick(input: {
   networkId?: string | null;
   salePrice?: number;
   commissionPercentage?: number;
+  /** Set for white-label store clicks; those never touch main-site counters. */
+  tenantId?: string | null;
+  retailer?: string;
+  tagSource?: "tenant" | "platform" | "none";
 }) {
   const context = requestContext(input.request);
   if (isBot(context.userAgent)) return null;
@@ -65,6 +69,9 @@ export async function recordClick(input: {
       coupon: input.couponId ?? null,
       category: input.categoryId ?? null,
       affiliateNetwork: input.networkId ?? null,
+      tenant: input.tenantId ?? null,
+      retailer: input.retailer ?? "",
+      tagSource: input.tagSource ?? "",
       device: context.device,
       browser: context.browser,
       os: context.os,
@@ -75,7 +82,7 @@ export async function recordClick(input: {
       estimatedRevenue,
       clickedAt: new Date(),
     }),
-    input.productId
+    input.productId && !input.tenantId
       ? Product.updateOne(
           { _id: input.productId },
           { $inc: { clickCount: 1, popularityScore: 3 } },
