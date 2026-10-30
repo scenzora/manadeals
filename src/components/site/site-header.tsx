@@ -19,10 +19,13 @@ export function SiteHeader({
   categories,
   siteName,
   logo,
+  textWordmark = false,
 }: {
   categories: NavCategory[];
   siteName: string;
   logo: string;
+  /** White-label stores without a logo show their name instead of ManaDeals' logo. */
+  textWordmark?: boolean;
 }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -51,14 +54,18 @@ export function SiteHeader({
 
         <Link href="/" className="flex shrink-0 items-center" aria-label={siteName}>
           {/* The logo already contains the wordmark, so no text label beside it. */}
-          <Image
-            src={logo || "/logo.png"}
-            alt={siteName}
-            width={1025}
-            height={240}
-            priority
-            className="h-9 w-auto object-contain sm:h-10"
-          />
+          {textWordmark && !logo ? (
+            <span className="text-lg font-semibold tracking-tight text-[var(--foreground)]">{siteName}</span>
+          ) : (
+            <Image
+              src={logo || "/logo.png"}
+              alt={siteName}
+              width={1025}
+              height={240}
+              priority
+              className="h-9 w-auto object-contain sm:h-10"
+            />
+          )}
         </Link>
 
         <form onSubmit={submitSearch} className="relative ml-2 hidden flex-1 md:block">

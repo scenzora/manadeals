@@ -37,6 +37,9 @@ export function SiteFooter({
   social,
   contactEmail,
   disclosure,
+  textWordmark = false,
+  poweredBy = false,
+  footerText = "",
 }: {
   categories: NavCategory[];
   siteName: string;
@@ -45,6 +48,10 @@ export function SiteFooter({
   social: Record<string, string>;
   contactEmail: string;
   disclosure: string;
+  textWordmark?: boolean;
+  /** Shows the "Powered by ManaDeals" credit on white-label stores. */
+  poweredBy?: boolean;
+  footerText?: string;
 }) {
   const year = new Date().getFullYear();
 
@@ -53,13 +60,17 @@ export function SiteFooter({
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid gap-8 md:grid-cols-4">
           <div className="space-y-3">
-            <Image
-              src={logo || "/logo.png"}
-              alt={siteName}
-              width={1025}
-              height={240}
-              className="h-10 w-auto object-contain"
-            />
+            {textWordmark && !logo ? (
+              <span className="text-lg font-semibold text-white">{siteName}</span>
+            ) : (
+              <Image
+                src={logo || "/logo.png"}
+                alt={siteName}
+                width={1025}
+                height={240}
+                className="h-10 w-auto object-contain"
+              />
+            )}
             <p className="max-w-xs text-sm">
               {tagline || "Handpicked deals and price drops from Amazon, Flipkart and more."}
             </p>
@@ -148,9 +159,20 @@ export function SiteFooter({
             {disclosure ||
               `${siteName} is a deals and price-comparison site. We may earn a commission when you buy through links on this site, at no extra cost to you. Prices and availability are accurate as of the time shown and can change on the retailer's site.`}
           </p>
+          {footerText && <p>{footerText}</p>}
           <p className="text-white/50">
             © {year} {siteName}. All product names, logos and brands are property of their respective
             owners.
+            {poweredBy && (
+              <>
+                {" "}
+                Powered by{" "}
+                <a href="https://manadeals.online" rel="noopener" className="underline hover:text-white">
+                  ManaDeals
+                </a>
+                .
+              </>
+            )}
           </p>
         </div>
       </div>
