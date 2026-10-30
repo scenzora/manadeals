@@ -40,6 +40,22 @@ const TenantSchema = new Schema(
       },
     },
 
+    /** What the store shows from the shared catalogue. Empty categories = everything. */
+    catalog: {
+      categories: { type: [{ type: Types.ObjectId, ref: "Category" }], default: [] },
+      dealOfTheDay: { type: Types.ObjectId, ref: "Product", default: null },
+      /** Home page sections in display order. */
+      sections: {
+        type: [
+          new Schema(
+            { key: { type: String, required: true }, enabled: { type: Boolean, default: true } },
+            { _id: false },
+          ),
+        ],
+        default: [],
+      },
+    },
+
     branding: {
       logoUrl: { type: String, default: "" },
       faviconUrl: { type: String, default: "" },

@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { parseHost } from "@/lib/tenant/host";
 
 const AUTH_COOKIE = process.env.AUTH_COOKIE_NAME || "manadeals_admin_session";
+const OWNER_COOKIE = process.env.OWNER_COOKIE_NAME || "manadeals_owner_session";
 
 /**
  * Edge middleware does two things:
@@ -21,6 +22,16 @@ export function proxy(request: NextRequest) {
   if (pathname === "/stores" || pathname.startsWith("/stores/")) {
     return withSecurityHeaders(NextResponse.redirect(new URL("/", request.url)));
   }
+
+  // Store-owner dashboard: cheap cookie presence check; the layout verifies the session.
+  const ownerPublic = pathname === "/dashboard/login" || pathname === "/dashboard/signup";
+  if (pathname.startsWith("/dashboard") && !ownerPublic && !request.cookies.get(OWNER_COOKIE)?.value) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard/login";
+    url.search = "";
+    return withSecurityHeaders(NextResponse.redirect(url));
+  }
+
   const hasSessionCookie = Boolean(request.cookies.get(AUTH_COOKIE)?.value);
 
   const isLoginRoute =
@@ -46,7 +57,7 @@ export function proxy(request: NextRequest) {
   // The tenant header is set only for store hosts; never trust one sent from outside.
   const headers = new Headers(request.headers);
   headers.delete("x-tenant-host");
-  if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/admin")) {
+  if (!pathname.startsWith("/admin") && !pathname.startsWith("/api/admin") && !pathname.startsWith("/dashboard")) {
     return NextResponse.next({ request: { headers } });
   }
   return withSecurityHeaders(NextResponse.next({ request: { headers } }));
@@ -65,7 +76,13 @@ function tenantResponse(request: NextRequest, hostname: string) {
   const { pathname, search } = request.nextUrl;
 
   // The platform admin and its API are not served on store hosts.
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin") || pathname.startsWith("/stores")) {
+  if (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/api/admin") ||
+    pathname.startsWith("/api/owner") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/stores")
+  ) {
     return withSecurityHeaders(new NextResponse("Not found", { status: 404 }));
   }
 

@@ -17,6 +17,7 @@ export type PublicTenant = {
     contactEmail: string;
     social: Record<string, string>;
   };
+  catalog: { categories: string[]; dealOfTheDay: string | null; sections: { key: string; enabled: boolean }[] };
   /** The hostname this tenant answers on as primary (custom domain, else subdomain). */
   primaryHostname: string;
 };

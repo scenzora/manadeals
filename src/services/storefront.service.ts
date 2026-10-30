@@ -6,6 +6,8 @@ import Deal from "@/models/Deal";
 import Coupon from "@/models/Coupon";
 import Banner from "@/models/Banner";
 import BlogPost from "@/models/BlogPost";
+import StoreBlogPost from "@/models/StoreBlogPost";
+import { scoped } from "@/lib/tenant/scope";
 import ProductReview from "@/models/ProductReview";
 import PriceHistory from "@/models/PriceHistory";
 import AffiliateNetwork from "@/models/AffiliateNetwork";
@@ -143,6 +145,8 @@ export type ProductQuery = {
   sort?: string;
   page?: number;
   limit?: number;
+  /** White-label stores: restrict to these categories (already expanded to children). */
+  categoryIds?: string[];
 };
 
 const SORT_MAP: Record<string, Record<string, 1 | -1>> = {
@@ -178,6 +182,11 @@ export async function listProducts(query: ProductQuery) {
     const children = await Category.find({ parent: category._id }).select("_id").lean();
     const ids = [category._id, ...children.map((child) => child._id)];
     filter.$and = [{ $or: [{ category: { $in: ids } }, { subcategory: { $in: ids } }] }];
+  }
+
+  if (query.categoryIds?.length) {
+    const scope = { $or: [{ category: { $in: query.categoryIds } }, { subcategory: { $in: query.categoryIds } }] };
+    filter.$and = [...((filter.$and as unknown[]) ?? []), scope];
   }
 
   if (query.brand) {
@@ -485,4 +494,124 @@ export async function getSitemapEntries() {
   ]);
 
   return plain({ products, categories, brands, posts });
+}
+
+/** A category id plus all of its children; used to turn a store's picks into a product filter. */
+export async function expandCategoryIds(ids: string[]) {
+  if (ids.length === 0) return [];
+  await connectToDatabase();
+  const children = await Category.find({ parent: { $in: ids } }).select("_id").lean();
+  return [...new Set([...ids, ...children.map((child) => String(child._id))])];
+}
+
+export type StoreHomeScope = {
+  /** Expanded category ids; empty means the whole catalogue. */
+  categoryIds: string[];
+  dealOfTheDayId: string | null;
+  enabled: string[];
+  tenantId: string;
+};
+
+/** Home page data for a white-label store, loading only the sections it has switched on. */
+export async function getStoreHomeData(scope: StoreHomeScope) {
+  await connectToDatabase();
+  await expireStaleOffers();
+
+  const now = new Date();
+  const wants = (key: string) => scope.enabled.includes(key);
+  const inScope = scope.categoryIds.length
+    ? { $or: [{ category: { $in: scope.categoryIds } }, { subcategory: { $in: scope.categoryIds } }] }
+    : {};
+
+  const cards = (filter: Record<string, unknown>, sort: Record<string, 1 | -1>, limit = 8) =>
+    Product.find(asFilter({ status: "active", ...inScope, ...filter }))
+      .select(PRODUCT_CARD_FIELDS)
+      .populate({ path: "category", select: "name slug" })
+      .populate({ path: "brand", select: "name slug" })
+      .populate({ path: "affiliateLinks.network", select: "name code" })
+      .sort(sort)
+      .limit(limit)
+      .lean();
+
+  const none = Promise.resolve([]);
+
+  const [pinned, fallbackDeal, featured, trending, biggest, deals, coupons, posts] = await Promise.all([
+    wants("dealOfTheDay") && scope.dealOfTheDayId ? cards({ _id: scope.dealOfTheDayId }, {}, 1) : none,
+    // No pinned product: fall back to the best-discounted flagged deal in the store's categories.
+    wants("dealOfTheDay") && !scope.dealOfTheDayId ? cards({ isDealOfTheDay: true }, { discountPercentage: -1 }, 1) : none,
+    wants("featured") ? cards({ isFeatured: true }, { clickCount: -1 }) : none,
+    wants("trending") ? cards({ isTrending: true }, { viewCount: -1 }) : none,
+    wants("biggestDiscounts") ? cards({ discountPercentage: { $gte: 30 } }, { discountPercentage: -1 }) : none,
+    wants("deals")
+      ? Deal.find({ status: "active", endDate: { $gte: now } })
+          .populate({ path: "product", select: "slug thumbnail name" })
+          .populate({ path: "affiliateNetwork", select: "name code" })
+          .sort({ isFeatured: -1, endDate: 1 })
+          .limit(6)
+          .lean()
+      : none,
+    wants("coupons")
+      ? Coupon.find({ status: "active", expiryDate: { $gte: now } })
+          .populate({ path: "affiliateNetwork", select: "name code" })
+          .sort({ isVerified: -1, expiryDate: 1 })
+          .limit(6)
+          .lean()
+      : none,
+    wants("posts")
+      ? scoped(StoreBlogPost, scope.tenantId).find({ status: "published" })
+          .select("title slug excerpt featuredImage publishedAt readingMinutes")
+          .sort({ publishedAt: -1 })
+          .limit(3)
+          .lean()
+      : none,
+  ]);
+
+  const dealProduct = pinned[0] ?? fallbackDeal[0];
+
+  return {
+    dealOfTheDay: dealProduct ? toCard(dealProduct) : null,
+    featured: featured.map(toCard),
+    trending: trending.map(toCard),
+    biggestDiscounts: biggest.map(toCard),
+    deals: plain(deals),
+    coupons: plain(coupons),
+    posts: plain(posts),
+  };
+}
+
+export async function listStorePosts(tenantId: string, page = 1, limit = 12) {
+  await connectToDatabase();
+  const posts = scoped(StoreBlogPost, tenantId);
+  const filter = { status: "published" as const };
+  const [items, total] = await Promise.all([
+    posts
+      .find(filter)
+      .select("title slug excerpt featuredImage publishedAt readingMinutes")
+      .sort({ publishedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    posts.countDocuments(filter),
+  ]);
+  return { items: plain(items), total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) };
+}
+
+export async function getStorePost(tenantId: string, slug: string) {
+  await connectToDatabase();
+  const post = await scoped(StoreBlogPost, tenantId).findOne({ slug, status: "published" }).lean();
+  return post ? plain(post) : null;
+}
+
+/** Whether a product belongs to the store's chosen categories (always true when none are chosen). */
+export async function isProductInScope(slug: string, categoryIds: string[]) {
+  if (categoryIds.length === 0) return true;
+  await connectToDatabase();
+  const product = await Product.findOne({
+    slug,
+    status: "active",
+    $or: [{ category: { $in: categoryIds } }, { subcategory: { $in: categoryIds } }],
+  })
+    .select("_id")
+    .lean();
+  return Boolean(product);
 }

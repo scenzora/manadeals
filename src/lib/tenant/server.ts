@@ -24,6 +24,14 @@ function toPublicTenant(doc: any, primaryHostname: string): PublicTenant {
       contactEmail: doc.branding?.contactEmail ?? "",
       social: JSON.parse(JSON.stringify(doc.branding?.social ?? {})),
     },
+    catalog: {
+      categories: (doc.catalog?.categories ?? []).map(String),
+      dealOfTheDay: doc.catalog?.dealOfTheDay ? String(doc.catalog.dealOfTheDay) : null,
+      sections: (doc.catalog?.sections ?? []).map((entry: { key: string; enabled: boolean }) => ({
+        key: entry.key,
+        enabled: entry.enabled,
+      })),
+    },
     primaryHostname,
   };
 }

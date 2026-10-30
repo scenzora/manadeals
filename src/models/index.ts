@@ -20,6 +20,8 @@ export { default as ProductReview } from "./ProductReview";
 export { default as ProductView } from "./ProductView";
 export { default as Role } from "./Role";
 export { default as Settings } from "./Settings";
+export { default as StoreBlogPost } from "./StoreBlogPost";
+export { default as StoreOwner } from "./StoreOwner";
 export { default as Tenant } from "./Tenant";
 export { default as TenantDomain } from "./TenantDomain";
 export { default as User } from "./User";

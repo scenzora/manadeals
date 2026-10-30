@@ -151,3 +151,16 @@ export function buildThemeCss(rawTheme: Partial<Record<keyof TenantTheme, unknow
   }
   return `html:root{${rule([...lightVars(theme), ...shared])}}`;
 }
+
+/** The theme as inline CSS variables, for scoped live previews in the dashboard. */
+export function previewVariables(
+  rawTheme: Partial<Record<keyof TenantTheme, unknown>> | null | undefined,
+  dark = false,
+): Record<string, string> {
+  const theme = sanitizeTheme(rawTheme);
+  const entries = (dark ? darkVars(theme) : lightVars(theme)).map((line) => {
+    const index = line.indexOf(":");
+    return [line.slice(0, index), line.slice(index + 1)] as const;
+  });
+  return { ...Object.fromEntries(entries), "--radius": `${theme.radius}px` };
+}
