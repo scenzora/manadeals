@@ -44,6 +44,7 @@ export const brandingSchema = z.object({
   contactEmail: z.union([email, z.literal("")]).default(""),
   logoUrl: optionalUrl,
   faviconUrl: optionalUrl,
+  showPoweredBy: z.boolean().default(true),
   social: z
     .object({
       facebook: optionalUrl,

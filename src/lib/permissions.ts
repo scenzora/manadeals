@@ -18,6 +18,7 @@ export const PERMISSION_GROUPS = {
   "Price Tracking": ["price-tracking.view", "price-tracking.manage"],
   Analytics: ["analytics.view"],
   Users: ["users.view", "users.edit", "users.delete"],
+  Stores: ["stores.view", "stores.manage"],
   Banners: ["banners.view", "banners.create", "banners.edit", "banners.delete"],
   Blog: ["blog.view", "blog.create", "blog.edit", "blog.delete", "blog.publish"],
   Wiki: ["wiki.view", "wiki.create", "wiki.edit", "wiki.delete"],

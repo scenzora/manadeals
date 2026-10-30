@@ -62,6 +62,8 @@ const TenantSchema = new Schema(
       tagline: { type: String, default: "", maxlength: 160 },
       footerText: { type: String, default: "", maxlength: 500 },
       contactEmail: { type: String, default: "" },
+      /** Pro stores may switch the "Powered by ManaDeals" credit off. */
+      showPoweredBy: { type: Boolean, default: true },
       social: {
         facebook: { type: String, default: "" },
         instagram: { type: String, default: "" },

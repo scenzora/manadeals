@@ -615,3 +615,23 @@ export async function isProductInScope(slug: string, categoryIds: string[]) {
     .lean();
   return Boolean(product);
 }
+
+/** URLs a white-label store can put in its sitemap; products only when the SEO policy allows them. */
+export async function getStoreSitemapEntries(tenantId: string, categoryIds: string[], includeProducts: boolean) {
+  await connectToDatabase();
+  const inScope = categoryIds.length
+    ? { $or: [{ category: { $in: categoryIds } }, { subcategory: { $in: categoryIds } }] }
+    : {};
+
+  const [products, categories, posts] = await Promise.all([
+    includeProducts
+      ? Product.find(asFilter({ status: "active", ...inScope })).select("slug updatedAt").limit(5000).lean()
+      : Promise.resolve([]),
+    Category.find(asFilter({ status: "active", ...(categoryIds.length ? { _id: { $in: categoryIds } } : {}) }))
+      .select("slug updatedAt")
+      .lean(),
+    scoped(StoreBlogPost, tenantId).find({ status: "published" }).select("slug updatedAt").lean(),
+  ]);
+
+  return plain({ products, categories, posts });
+}

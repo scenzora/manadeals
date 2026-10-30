@@ -23,6 +23,7 @@ export type OwnerStore = {
     tagline: string;
     footerText: string;
     contactEmail: string;
+    showPoweredBy?: boolean;
     social: Record<string, string>;
   };
   affiliate: { amazonAssociateTag: string; flipkartAffiliateId: string; generic: { network: string; id: string }[] };

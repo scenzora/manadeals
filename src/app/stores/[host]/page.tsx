@@ -1,8 +1,11 @@
 import Image from "next/image";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Flame } from "lucide-react";
 
 import { getStoreHomeData } from "@/services/storefront.service";
+import { limitsFor } from "@/lib/plans";
+import { storeMetadata } from "@/lib/tenant/seo";
 import { normaliseSections } from "@/lib/tenant/sections";
 import { requireTenant, scopeCategoryIds, type HostParams } from "@/lib/tenant/page";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -13,9 +16,22 @@ import { Section, SectionHeading } from "@/components/site/ui";
 
 export const revalidate = 300;
 
+export async function generateMetadata({ params }: { params: HostParams }): Promise<Metadata> {
+  const tenant = await requireTenant(params);
+  return storeMetadata(tenant, {
+    path: "/",
+    kind: "home",
+    title: tenant.name,
+    description: tenant.branding.tagline || `Deals and price drops curated by ${tenant.name}.`,
+    image: tenant.branding.logoUrl || undefined,
+  });
+}
+
 export default async function StoreHomePage({ params }: { params: HostParams }) {
   const tenant = await requireTenant(params);
-  const sections = normaliseSections(tenant.catalog.sections).filter((section) => section.enabled);
+  const sections = normaliseSections(tenant.catalog.sections).filter((section) => section.enabled)
+    // A plan downgrade must not leave extra sections live.
+    .slice(0, limitsFor(tenant.plan).homeSections);
 
   const data = await getStoreHomeData({
     tenantId: tenant.id,

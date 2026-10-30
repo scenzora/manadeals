@@ -17,6 +17,11 @@ export type PublicTenant = {
     contactEmail: string;
     social: Record<string, string>;
   };
+  /** Number of published blog posts; feeds the indexing policy. */
+  publishedPosts: number;
+  /** True when the primary host is a verified custom domain. */
+  hasCustomDomain: boolean;
+  showPoweredBy: boolean;
   catalog: { categories: string[]; dealOfTheDay: string | null; sections: { key: string; enabled: boolean }[] };
   /** The hostname this tenant answers on as primary (custom domain, else subdomain). */
   primaryHostname: string;

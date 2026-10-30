@@ -1,5 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+import { storeMetadata } from "@/lib/tenant/seo";
 
 import { listStorePosts } from "@/services/storefront.service";
 import { requireTenant, type HostParams } from "@/lib/tenant/page";
@@ -7,6 +10,11 @@ import { formatDate } from "@/lib/utils/format";
 import { Breadcrumbs, Section, SiteEmptyState, SitePagination } from "@/components/site/ui";
 
 export const revalidate = 300;
+
+export async function generateMetadata({ params }: { params: HostParams }): Promise<Metadata> {
+  const tenant = await requireTenant(params);
+  return storeMetadata(tenant, { path: "/blog", title: "Blog", description: `Articles and buying guides from ${tenant.name}.` });
+}
 
 export default async function StoreBlogIndex({
   params,

@@ -36,6 +36,7 @@ export function BrandingForm({ store, onSaved, submitLabel = "Save branding", on
     contactEmail: store.branding.contactEmail ?? "",
     logoUrl: store.branding.logoUrl ?? "",
     faviconUrl: store.branding.faviconUrl ?? "",
+    showPoweredBy: store.branding.showPoweredBy !== false,
     social: {
       facebook: "",
       instagram: "",
@@ -83,6 +84,14 @@ export function BrandingForm({ store, onSaved, submitLabel = "Save branding", on
           <Field label="Contact email" htmlFor="b-mail">
             <Input id="b-mail" type="email" value={form.contactEmail} onChange={(e) => set({ contactEmail: e.target.value })} />
           </Field>
+          {store.plan === "pro" ? (
+            <ToggleRow
+              label="Show “Powered by ManaDeals”"
+              description="Pro stores can remove the credit from the footer"
+              checked={form.showPoweredBy}
+              onCheckedChange={(showPoweredBy) => set({ showPoweredBy })}
+            />
+          ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
             {(Object.keys(form.social) as (keyof typeof form.social)[]).map((network) => (
               <Field key={network} label={`${network[0]!.toUpperCase()}${network.slice(1)} URL`} htmlFor={`b-${network}`}>

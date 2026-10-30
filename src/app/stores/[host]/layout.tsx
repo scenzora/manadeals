@@ -9,6 +9,7 @@ import connectToDatabase from "@/lib/mongodb";
 import { SITE_URL } from "@/lib/seo";
 import { buildThemeCss, type ThemeFont } from "@/lib/tenant/theme";
 import { resolveTenantByHost } from "@/lib/tenant/server";
+import { isIndexable } from "@/lib/tenant/seo";
 
 /**
  * Wraps every page of a white-label store. The proxy rewrites the visitor's
@@ -40,8 +41,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     description,
     icons: tenant.branding.faviconUrl ? { icon: tenant.branding.faviconUrl } : undefined,
     openGraph: { title, description, siteName: title, images: tenant.branding.logoUrl || undefined },
-    // Phase 5 replaces this with the configurable indexing policy.
-    robots: tenant.status === "active" ? undefined : { index: false, follow: false },
+    robots: isIndexable(tenant, "other") ? { index: true, follow: true } : { index: false, follow: true },
   };
 }
 
@@ -90,8 +90,8 @@ export default async function StoreLayout({
         contactEmail={tenant.branding.contactEmail}
         disclosure=""
         textWordmark
-        // Removable on Pro; plan gating is enforced here, not in the dashboard.
-        poweredBy={tenant.plan !== "pro"}
+        // Free stores always show the credit; Pro stores may switch it off. Enforced here, not in the dashboard.
+        poweredBy={tenant.plan !== "pro" || tenant.showPoweredBy}
         footerText={tenant.branding.footerText}
       />
     </div>

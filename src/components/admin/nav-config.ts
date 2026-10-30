@@ -17,6 +17,7 @@ import {
   Package,
   Settings,
   ShieldCheck,
+  Store,
   TrendingUp,
   Users,
   type LucideIcon,
@@ -90,6 +91,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "People",
     items: [
       { label: "Users", href: "/admin/users", icon: Users, permissions: ["users.view"] },
+      { label: "Stores", href: "/admin/stores", icon: Store, permissions: ["stores.view"] },
       {
         label: "Admins & Roles",
         href: "/admin/admin-users",

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getStorePost } from "@/services/storefront.service";
+import { storeMetadata } from "@/lib/tenant/seo";
 import { requireTenant, type HostParams } from "@/lib/tenant/page";
 import { renderMarkdown } from "@/lib/utils/markdown";
 import { formatDate } from "@/lib/utils/format";
@@ -16,7 +17,12 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const [tenant, { slug }] = await Promise.all([requireTenant(params), params]);
   const post = await getStorePost(tenant.id, slug);
   if (!post) return { robots: { index: false } };
-  return { title: post.title, description: post.excerpt || undefined, alternates: { canonical: `/blog/${post.slug}` } };
+  return storeMetadata(tenant, {
+    path: `/blog/${post.slug}`,
+    title: post.title,
+    description: post.excerpt || undefined,
+    image: post.featuredImage || undefined,
+  });
 }
 
 export default async function StoreBlogPostPage({ params }: { params: Params }) {

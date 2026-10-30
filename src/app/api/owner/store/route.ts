@@ -53,6 +53,8 @@ export const PATCH = ownerRoute(async (request, { owner }) => {
         "branding.tagline": input.tagline,
         "branding.footerText": input.footerText,
         "branding.contactEmail": input.contactEmail,
+        // Only Pro stores may hide the credit; for everyone else it stays on.
+        "branding.showPoweredBy": tenant.plan === "pro" ? input.showPoweredBy : true,
         "branding.logoUrl": ownImageOrBlank(input.logoUrl),
         "branding.faviconUrl": ownImageOrBlank(input.faviconUrl),
         "branding.social": input.social,
