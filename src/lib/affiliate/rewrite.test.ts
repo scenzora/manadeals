@@ -106,3 +106,33 @@ describe("Tenant model", () => {
     }
   });
 });
+
+describe("custom rules", () => {
+  const rule = { name: "Myntra", domain: "myntra.com", mode: "param", param: "affid", value: "abc123", template: "" } as const;
+  const withRules = (...custom: TenantAffiliate["custom"] & object) => ({ ...john, custom });
+
+  it("adds the parameter on the matching retailer, overriding any existing one", () => {
+    const result = run("https://www.myntra.com/shoes?affid=someone-else&a=1", withRules(rule));
+    expect(result.source).toBe("tenant");
+    expect(new URL(result.url!).searchParams.get("affid")).toBe("abc123");
+    expect(new URL(result.url!).hostname).toBe("www.myntra.com");
+  });
+
+  it("does not match look-alike hosts", () => {
+    expect(run("https://notmyntra.com/x", withRules(rule), true).source).toBe("tenant"); // falls to generic
+    expect(run("https://notmyntra.com/x", { ...withRules(rule), generic: [] }).source).toBe("platform");
+  });
+
+  it("prefers an exact-domain rule over the catch-all wrapper", () => {
+    const wrapper = { name: "Net", domain: "*", mode: "template", param: "", value: "id9", template: "https://net.example/go?i={id}&u={url}" } as const;
+    expect(run("https://www.myntra.com/x", withRules(wrapper, rule)).url).toContain("affid=abc123");
+    expect(run("https://ajio.com/x", withRules(wrapper, rule)).url).toBe(
+      "https://net.example/go?i=id9&u=" + encodeURIComponent("https://ajio.com/x"),
+    );
+  });
+
+  it("ignores unsafe templates", () => {
+    const bad = { ...rule, domain: "*", mode: "template", template: "http://127.0.0.1/?u={url}" } as const;
+    expect(run("https://ajio.com/x", { ...john, generic: [], custom: [bad] }).source).toBe("platform");
+  });
+});

@@ -31,5 +31,5 @@ export default async function StoreProductsPage({
 }) {
   const tenant = await requireTenant(params);
   const categoryIds = await scopeCategoryIds(tenant.catalog.categories);
-  return <ProductsView params={await searchParams} categoryIds={categoryIds} />;
+  return <ProductsView params={await searchParams} categoryIds={categoryIds} tenantId={tenant.id} />;
 }

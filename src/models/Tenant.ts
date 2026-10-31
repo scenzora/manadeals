@@ -40,6 +40,24 @@ const TenantSchema = new Schema(
         default: [],
         select: false,
       },
+      /** Owner-defined rules for any other retailer or affiliate network. */
+      custom: {
+        type: [
+          new Schema(
+            {
+              name: { type: String, required: true },
+              domain: { type: String, required: true },
+              mode: { type: String, enum: ["param", "template"], required: true },
+              param: { type: String, default: "" },
+              value: { type: String, required: true },
+              template: { type: String, default: "" },
+            },
+            { _id: false },
+          ),
+        ],
+        default: [],
+        select: false,
+      },
     },
 
     /** What the store shows from the shared catalogue. Empty categories = everything. */
@@ -56,6 +74,21 @@ const TenantSchema = new Schema(
         ],
         default: [],
       },
+    },
+
+    /** Owner-made categories: a name plus hand-picked catalogue products. Array order = display order. */
+    collections: {
+      type: [
+        new Schema(
+          {
+            name: { type: String, required: true, maxlength: 40 },
+            slug: { type: String, required: true },
+            products: { type: [{ type: Types.ObjectId, ref: "Product" }], default: [] },
+          },
+          { _id: false },
+        ),
+      ],
+      default: [],
     },
 
     branding: {

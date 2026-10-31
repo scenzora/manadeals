@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, Plus, Trash2 } from "lucide-react";
 
 import type { OwnerStore } from "@/lib/owner-page";
-import { GENERIC_NETWORKS } from "@/lib/affiliate/rewrite";
+import { GENERIC_NETWORKS, MAX_CUSTOM_RULES, type CustomRule } from "@/lib/affiliate/rewrite";
 import { HOME_SECTIONS } from "@/lib/tenant/sections";
 import { limitsFor } from "@/lib/plans";
 import { apiClient } from "@/lib/api-client";
@@ -138,7 +138,11 @@ export function AffiliateForm({ store, onSaved, submitLabel = "Save affiliate ID
   const [generic, setGeneric] = useState<Record<string, string>>(
     Object.fromEntries(store.affiliate.generic.map((entry) => [entry.network, entry.id])),
   );
+  const [custom, setCustom] = useState<CustomRule[]>(store.affiliate.custom ?? []);
   const [busy, setBusy] = useState(false);
+
+  const updateRule = (index: number, patch: Partial<CustomRule>) =>
+    setCustom((rules) => rules.map((rule, i) => (i === index ? { ...rule, ...patch } : rule)));
 
   return (
     <form
@@ -149,6 +153,7 @@ export function AffiliateForm({ store, onSaved, submitLabel = "Save affiliate ID
         const saved = await saveSection(
           {
             section: "affiliate",
+            custom: custom.map((rule) => ({ ...rule, name: rule.name.trim(), domain: rule.domain.trim() })),
             amazonAssociateTag: amazon.trim(),
             flipkartAffiliateId: flipkart.trim(),
             generic: Object.entries(generic)
@@ -181,6 +186,104 @@ export function AffiliateForm({ store, onSaved, submitLabel = "Save affiliate ID
           <Input id={`a-${key}`} value={generic[key] ?? ""} onChange={(e) => setGeneric({ ...generic, [key]: e.target.value })} />
         </Field>
       ))}
+
+      <div className="space-y-3 border-t border-[var(--border)] pt-5">
+        <div>
+          <h3 className="text-sm font-semibold">Other companies &amp; networks</h3>
+          <p className="text-xs text-[var(--muted-foreground)]">
+            Add any retailer or affiliate network. Pick a parameter (adds <code>?affid=your-id</code> to links on that
+            site) or a link wrapper (the network&apos;s own redirect link). Use <code>*</code> as the website to apply a
+            wrapper to every other retailer.
+          </p>
+        </div>
+
+        {custom.map((rule, index) => (
+          <div key={index} className="space-y-3 rounded-lg border border-[var(--border)] p-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Company / network name" htmlFor={`c-name-${index}`}>
+                <Input
+                  id={`c-name-${index}`}
+                  value={rule.name}
+                  onChange={(e) => updateRule(index, { name: e.target.value })}
+                  placeholder="Myntra"
+                />
+              </Field>
+              <Field label="Website" htmlFor={`c-domain-${index}`} hint="e.g. myntra.com, or * for all others">
+                <Input
+                  id={`c-domain-${index}`}
+                  value={rule.domain}
+                  onChange={(e) => updateRule(index, { domain: e.target.value })}
+                  placeholder="myntra.com"
+                />
+              </Field>
+            </div>
+
+            <div className="flex gap-4 text-sm">
+              {(["param", "template"] as const).map((mode) => (
+                <label key={mode} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name={`c-mode-${index}`}
+                    checked={rule.mode === mode}
+                    onChange={() => updateRule(index, { mode })}
+                  />
+                  {mode === "param" ? "Add a parameter to the link" : "Wrap in a network link"}
+                </label>
+              ))}
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {rule.mode === "param" ? (
+                <Field label="Parameter name" htmlFor={`c-param-${index}`} hint="e.g. affid, ref, tag">
+                  <Input
+                    id={`c-param-${index}`}
+                    value={rule.param}
+                    onChange={(e) => updateRule(index, { param: e.target.value })}
+                    placeholder="affid"
+                  />
+                </Field>
+              ) : (
+                <Field
+                  label="Network link"
+                  htmlFor={`c-tpl-${index}`}
+                  hint="Must be https and contain {url}; {id} is replaced by your ID"
+                  className="sm:col-span-2"
+                >
+                  <Input
+                    id={`c-tpl-${index}`}
+                    value={rule.template}
+                    onChange={(e) => updateRule(index, { template: e.target.value })}
+                    placeholder="https://network.com/go?id={id}&url={url}"
+                  />
+                </Field>
+              )}
+              <Field label="Your ID" htmlFor={`c-value-${index}`}>
+                <Input id={`c-value-${index}`} value={rule.value} onChange={(e) => updateRule(index, { value: e.target.value })} />
+              </Field>
+            </div>
+
+            <Button type="button" variant="ghost" size="sm" onClick={() => setCustom((rules) => rules.filter((_, i) => i !== index))}>
+              <Trash2 />
+              Remove
+            </Button>
+          </div>
+        ))}
+
+        {custom.length < MAX_CUSTOM_RULES ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setCustom((rules) => [...rules, { name: "", domain: "", mode: "param", param: "", value: "", template: "" }])
+            }
+          >
+            <Plus />
+            Add another company
+          </Button>
+        ) : null}
+      </div>
+
       <SubmitRow busy={busy} label={submitLabel} />
     </form>
   );

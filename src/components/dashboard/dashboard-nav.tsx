@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, CreditCard, FileText, Globe, Home, KeyRound, LogOut, Palette, ShoppingBag } from "lucide-react";
+import { BarChart3, CreditCard, FileText, Globe, Home, KeyRound, LogOut, Package, Palette, ShoppingBag } from "lucide-react";
 
 import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils/cn";
@@ -11,6 +11,7 @@ const ITEMS = [
   { href: "/dashboard", label: "Overview", icon: Home },
   { href: "/dashboard/branding", label: "Branding", icon: Palette },
   { href: "/dashboard/affiliate", label: "Affiliate IDs", icon: KeyRound },
+  { href: "/dashboard/my-products", label: "My products", icon: Package },
   { href: "/dashboard/catalog", label: "Products & sections", icon: ShoppingBag },
   { href: "/dashboard/blog", label: "Blog", icon: FileText },
   { href: "/dashboard/domains", label: "Domains", icon: Globe },

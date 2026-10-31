@@ -20,7 +20,8 @@ export const POST = ownerRoute(async (request, { owner }) => {
 
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
-  const kind = form?.get("kind") === "favicon" ? "favicon" : "logo";
+  const rawKind = form?.get("kind");
+  const kind = rawKind === "favicon" ? "favicon" : rawKind === "product" ? "product" : "logo";
   if (!(file instanceof File)) return fail("No file was submitted", 400);
   if (file.size > MAX_BRAND_IMAGE_BYTES) return fail("Images must be 1 MB or smaller", 413);
 

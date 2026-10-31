@@ -10,10 +10,13 @@ import { Breadcrumbs, Section, SiteEmptyState, SitePagination } from "@/componen
 export async function ProductsView({
   params,
   categoryIds,
+  tenantId,
 }: {
   params: Record<string, string | undefined>;
   /** White-label stores pass their chosen categories; the main site passes none. */
   categoryIds?: string[];
+  /** White-label stores also show their own products. */
+  tenantId?: string;
 }) {
   const page = Number(params.page) || 1;
 
@@ -29,6 +32,7 @@ export async function ProductsView({
       sort: params.sort,
       page,
       categoryIds,
+      tenantId,
     }),
     Brand.find({ status: "active" }).select("name slug").sort({ name: 1 }).lean(),
     AffiliateNetwork.find({ status: "active" }).select("name code").sort({ name: 1 }).lean(),

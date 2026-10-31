@@ -49,3 +49,16 @@ export function parseCsv(input: string): Record<string, string>[] {
     Object.fromEntries(keys.map((key, index) => [key, (entry[index] ?? "").trim()])),
   );
 }
+
+/**
+ * Serialises rows to CSV. Cells that start with = + - @ are prefixed with an
+ * apostrophe so a spreadsheet cannot run them as formulas.
+ */
+export function toCsv(headers: string[], rows: (string | number)[][]): string {
+  const cell = (value: string | number) => {
+    let text = String(value ?? "");
+    if (/^[=+\-@]/.test(text) && Number.isNaN(Number(text))) text = `'${text}`;
+    return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+  };
+  return [headers, ...rows].map((row) => row.map(cell).join(",")).join("\r\n");
+}

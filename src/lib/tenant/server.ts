@@ -27,6 +27,11 @@ function toPublicTenant(doc: any, primaryHostname: string, publishedPosts: numbe
       contactEmail: doc.branding?.contactEmail ?? "",
       social: JSON.parse(JSON.stringify(doc.branding?.social ?? {})),
     },
+    collections: (doc.collections ?? []).map((entry: { name: string; slug: string; products: unknown[] }) => ({
+      name: entry.name,
+      slug: entry.slug,
+      products: entry.products.map(String),
+    })),
     catalog: {
       categories: (doc.catalog?.categories ?? []).map(String),
       dealOfTheDay: doc.catalog?.dealOfTheDay ? String(doc.catalog.dealOfTheDay) : null,

@@ -64,6 +64,16 @@ const ProductSchema = new Schema(
       keywords: { type: [String], default: [] },
     },
 
+    /**
+     * Set for products a store owner added themselves. Null = shared catalogue.
+     * Queries that do not mention `tenant` are narrowed to the shared catalogue
+     * (see the hooks below), so a store's own products can never leak onto the
+     * main site or into the admin panel.
+     */
+    tenant: { type: Types.ObjectId, ref: "Tenant", default: null, index: true },
+    /** Dummy products a new store starts with; owners can edit or delete them. */
+    isSample: { type: Boolean, default: false },
+
     createdBy: { type: Types.ObjectId, ref: "AdminUser", default: null },
     updatedBy: { type: Types.ObjectId, ref: "AdminUser", default: null },
   },
@@ -86,6 +96,27 @@ function syncDerivedPricing(this: Record<string, unknown>) {
 }
 
 ProductSchema.pre("save", syncDerivedPricing);
+
+function mentionsTenant(filter: unknown): boolean {
+  if (!filter || typeof filter !== "object") return false;
+  const record = filter as Record<string, unknown>;
+  if ("tenant" in record) return true;
+  return ["$and", "$or", "$nor"].some((key) => Array.isArray(record[key]) && (record[key] as unknown[]).some(mentionsTenant));
+}
+
+ProductSchema.pre(
+  ["find", "findOne", "countDocuments", "findOneAndUpdate", "findOneAndDelete", "updateOne", "updateMany", "deleteOne", "deleteMany"],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function (this: any) {
+    if (!mentionsTenant(this.getFilter())) this.where({ tenant: null });
+  },
+);
+
+ProductSchema.pre("aggregate", function () {
+  const pipeline = this.pipeline();
+  const first = pipeline[0] as { $match?: unknown } | undefined;
+  if (!(first && "$match" in first && mentionsTenant(first.$match))) pipeline.unshift({ $match: { tenant: null } });
+});
 
 export type ProductDoc = InferSchemaType<typeof ProductSchema>;
 

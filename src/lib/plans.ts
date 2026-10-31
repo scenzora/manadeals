@@ -3,10 +3,10 @@ export type Plan = "free" | "pro";
 /** What each plan allows. Enforced server-side wherever the limit applies. */
 export const PLAN_LIMITS: Record<
   Plan,
-  { homeSections: number; blogPosts: number; customDomain: boolean; removeBadge: boolean; fullAnalytics: boolean }
+  { homeSections: number; blogPosts: number; ownProducts: number; customDomain: boolean; removeBadge: boolean; fullAnalytics: boolean }
 > = {
-  free: { homeSections: 4, blogPosts: 5, customDomain: false, removeBadge: false, fullAnalytics: false },
-  pro: { homeSections: 20, blogPosts: 500, customDomain: true, removeBadge: true, fullAnalytics: true },
+  free: { homeSections: 4, blogPosts: 5, ownProducts: 12, customDomain: false, removeBadge: false, fullAnalytics: false },
+  pro: { homeSections: 20, blogPosts: 500, ownProducts: 1000, customDomain: true, removeBadge: true, fullAnalytics: true },
 };
 
 export const limitsFor = (plan: string) => PLAN_LIMITS[plan === "pro" ? "pro" : "free"];

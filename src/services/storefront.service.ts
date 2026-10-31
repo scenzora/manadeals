@@ -111,6 +111,9 @@ export type PublicProduct = {
   networks: { name: string; code: string }[];
 };
 
+/** Shared catalogue plus the viewing store's own products; main site (no tenant) sees the shared catalogue only. */
+const visibleTo = (tenantId?: string) => (tenantId ? { tenant: { $in: [null, tenantId] } } : {});
+
 const PRODUCT_CARD_FIELDS =
   "name slug shortDescription thumbnail originalPrice salePrice discountPercentage currency rating reviewCount availability isFeatured isTrending isDealOfTheDay category brand affiliateLinks";
 
@@ -134,6 +137,20 @@ function toCard(product: any): PublicProduct {
   });
 }
 
+/** Active products by id, returned in the order of `ids` (owner-chosen order). */
+export async function getProductsInOrder(ids: string[], tenantId?: string) {
+  if (ids.length === 0) return [];
+  await connectToDatabase();
+  const items = await Product.find({ _id: { $in: ids }, status: "active", ...visibleTo(tenantId) })
+    .select(PRODUCT_CARD_FIELDS)
+    .populate({ path: "category", select: "name slug" })
+    .populate({ path: "brand", select: "name slug" })
+    .populate({ path: "affiliateLinks.network", select: "name code" })
+    .lean();
+  const byId = new Map(items.map((item) => [String(item._id), item]));
+  return ids.flatMap((id) => (byId.has(id) ? [toCard(byId.get(id))] : []));
+}
+
 export type ProductQuery = {
   q?: string;
   category?: string;
@@ -147,6 +164,8 @@ export type ProductQuery = {
   limit?: number;
   /** White-label stores: restrict to these categories (already expanded to children). */
   categoryIds?: string[];
+  /** White-label stores: also show this store's own products. */
+  tenantId?: string;
 };
 
 const SORT_MAP: Record<string, Record<string, 1 | -1>> = {
@@ -165,7 +184,7 @@ export async function listProducts(query: ProductQuery) {
   const page = Math.max(1, query.page ?? 1);
   const limit = Math.min(48, Math.max(1, query.limit ?? 24));
 
-  const filter: Record<string, unknown> = { status: "active" };
+  const filter: Record<string, unknown> = { status: "active", ...visibleTo(query.tenantId) };
 
   if (query.q) {
     const regex = new RegExp(escapeRegex(query.q), "i");
@@ -185,7 +204,14 @@ export async function listProducts(query: ProductQuery) {
   }
 
   if (query.categoryIds?.length) {
-    const scope = { $or: [{ category: { $in: query.categoryIds } }, { subcategory: { $in: query.categoryIds } }] };
+    // The store's own products are always in scope, whatever category they sit in.
+    const scope = {
+      $or: [
+        { category: { $in: query.categoryIds } },
+        { subcategory: { $in: query.categoryIds } },
+        ...(query.tenantId ? [{ tenant: query.tenantId }] : []),
+      ],
+    };
     filter.$and = [...((filter.$and as unknown[]) ?? []), scope];
   }
 
@@ -235,10 +261,10 @@ export async function listProducts(query: ProductQuery) {
   };
 }
 
-export async function getProductBySlug(slug: string) {
+export async function getProductBySlug(slug: string, tenantId?: string) {
   await connectToDatabase();
 
-  const product = await Product.findOne({ slug, status: "active" })
+  const product = await Product.findOne({ slug, status: "active", ...visibleTo(tenantId) })
     .populate({ path: "category", select: "name slug" })
     .populate({ path: "subcategory", select: "name slug" })
     .populate({ path: "brand", select: "name slug logo" })
@@ -261,6 +287,7 @@ export async function getProductBySlug(slug: string) {
       _id: { $ne: product._id },
       category: product.category,
       status: "active",
+      ...visibleTo(tenantId),
     })
       .select(PRODUCT_CARD_FIELDS)
       .populate({ path: "category", select: "name slug" })
@@ -520,11 +547,17 @@ export async function getStoreHomeData(scope: StoreHomeScope) {
   const now = new Date();
   const wants = (key: string) => scope.enabled.includes(key);
   const inScope = scope.categoryIds.length
-    ? { $or: [{ category: { $in: scope.categoryIds } }, { subcategory: { $in: scope.categoryIds } }] }
+    ? {
+        $or: [
+          { category: { $in: scope.categoryIds } },
+          { subcategory: { $in: scope.categoryIds } },
+          { tenant: scope.tenantId },
+        ],
+      }
     : {};
 
   const cards = (filter: Record<string, unknown>, sort: Record<string, 1 | -1>, limit = 8) =>
-    Product.find(asFilter({ status: "active", ...inScope, ...filter }))
+    Product.find(asFilter({ status: "active", ...visibleTo(scope.tenantId), ...inScope, ...filter }))
       .select(PRODUCT_CARD_FIELDS)
       .populate({ path: "category", select: "name slug" })
       .populate({ path: "brand", select: "name slug" })
@@ -603,13 +636,21 @@ export async function getStorePost(tenantId: string, slug: string) {
 }
 
 /** Whether a product belongs to the store's chosen categories (always true when none are chosen). */
-export async function isProductInScope(slug: string, categoryIds: string[]) {
-  if (categoryIds.length === 0) return true;
+export async function isProductInScope(slug: string, categoryIds: string[], tenantId?: string) {
   await connectToDatabase();
   const product = await Product.findOne({
     slug,
     status: "active",
-    $or: [{ category: { $in: categoryIds } }, { subcategory: { $in: categoryIds } }],
+    ...visibleTo(tenantId),
+    ...(categoryIds.length
+      ? {
+          $or: [
+            { category: { $in: categoryIds } },
+            { subcategory: { $in: categoryIds } },
+            ...(tenantId ? [{ tenant: tenantId }] : []),
+          ],
+        }
+      : {}),
   })
     .select("_id")
     .lean();
@@ -620,12 +661,12 @@ export async function isProductInScope(slug: string, categoryIds: string[]) {
 export async function getStoreSitemapEntries(tenantId: string, categoryIds: string[], includeProducts: boolean) {
   await connectToDatabase();
   const inScope = categoryIds.length
-    ? { $or: [{ category: { $in: categoryIds } }, { subcategory: { $in: categoryIds } }] }
+    ? { $or: [{ category: { $in: categoryIds } }, { subcategory: { $in: categoryIds } }, { tenant: tenantId }] }
     : {};
 
   const [products, categories, posts] = await Promise.all([
     includeProducts
-      ? Product.find(asFilter({ status: "active", ...inScope })).select("slug updatedAt").limit(5000).lean()
+      ? Product.find(asFilter({ status: "active", ...visibleTo(tenantId), ...inScope })).select("slug updatedAt").limit(5000).lean()
       : Promise.resolve([]),
     Category.find(asFilter({ status: "active", ...(categoryIds.length ? { _id: { $in: categoryIds } } : {}) }))
       .select("slug updatedAt")

@@ -69,7 +69,11 @@ export default async function StoreLayout({
   }
 
   await connectToDatabase();
-  const categories = await getNavigation();
+  // Owner-made categories (in the owner's order) replace the shared menu when the store has any.
+  const categories =
+    (tenant.collections?.length ?? 0) > 0
+      ? (tenant.collections ?? []).map((entry) => ({ _id: entry.slug, name: entry.name, slug: entry.slug, children: [] }))
+      : await getNavigation();
   const font = FONTS[tenant.theme.fontFamily];
 
   return (

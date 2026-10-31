@@ -17,9 +17,9 @@ export const revalidate = 300;
 
 type Params = Promise<{ slug: string }>;
 
-export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+export async function generateMetadata({ params, tenantId }: { params: Params; tenantId?: string }): Promise<Metadata> {
   const { slug } = await params;
-  const data = await getProductBySlug(slug);
+  const data = await getProductBySlug(slug, tenantId);
   if (!data) return buildMetadata({ title: "Product not found", noIndex: true });
 
   const { product } = data;
@@ -34,9 +34,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   });
 }
 
-export default async function ProductPage({ params }: { params: Params }) {
+export default async function ProductPage({ params, tenantId }: { params: Params; tenantId?: string }) {
   const { slug } = await params;
-  const data = await getProductBySlug(slug);
+  const data = await getProductBySlug(slug, tenantId);
   if (!data) notFound();
 
   const { product, history, reviews, related } = data;

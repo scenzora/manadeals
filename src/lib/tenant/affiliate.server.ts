@@ -23,6 +23,7 @@ export async function getTenantAffiliate(tenantId: string): Promise<TenantAffili
         amazonAssociateTag: tenant.affiliate?.amazonAssociateTag ?? "",
         flipkartAffiliateId: tenant.affiliate?.flipkartAffiliateId ?? "",
         generic: (tenant.affiliate?.generic ?? []).map((entry) => ({ network: entry.network, id: entry.id })),
+        custom: (tenant.affiliate?.custom ?? []).map((rule) => ({ ...rule })),
       }
     : EMPTY_AFFILIATE;
 

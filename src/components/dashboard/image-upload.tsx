@@ -14,7 +14,7 @@ export function ImageUpload({
   value,
   onChange,
 }: {
-  kind: "logo" | "favicon";
+  kind: "logo" | "favicon" | "product";
   value: string;
   onChange: (url: string) => void;
 }) {

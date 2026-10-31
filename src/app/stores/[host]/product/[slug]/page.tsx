@@ -13,7 +13,7 @@ type Params = HostParams & Promise<{ slug: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const [tenant, { slug }] = await Promise.all([requireTenant(params), params]);
-  const base = await mainProductMetadata({ params });
+  const base = await mainProductMetadata({ params, tenantId: tenant.id });
   return {
     ...base,
     ...storeMetadata(tenant, {
@@ -32,6 +32,6 @@ export default async function StoreProductPage({
 }) {
   const [tenant, { slug }] = await Promise.all([requireTenant(params), params]);
   const categoryIds = await scopeCategoryIds(tenant.catalog.categories);
-  if (!(await isProductInScope(slug, categoryIds))) notFound();
-  return <ProductPage params={params} />;
+  if (!(await isProductInScope(slug, categoryIds, tenant.id))) notFound();
+  return <ProductPage params={params} tenantId={tenant.id} />;
 }

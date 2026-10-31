@@ -14,6 +14,7 @@ const tenant = (slug: string): PublicTenant => ({
   publishedPosts: 0,
   hasCustomDomain: false,
   showPoweredBy: true,
+  collections: [],
   catalog: { categories: [], dealOfTheDay: null, sections: [] },
   primaryHostname: `${slug}.manadeals.online`,
 });

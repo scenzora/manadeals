@@ -85,7 +85,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     if (type === "deal") return redirectDeal(request, id, trackingEnabled, tenant, home);
     if (type === "coupon") return redirectCoupon(request, id, trackingEnabled, tenant, home);
 
-    const product = await Product.findOne({ _id: id, status: "active" })
+    // A store's own products are only reachable from that store's host.
+    const product = await Product.findOne({ _id: id, status: "active", tenant: tenant ? { $in: [null, tenant.id] } : null })
       .select("category salePrice affiliateLinks")
       .populate({ path: "affiliateLinks.network", select: "affiliateUrlPattern trackingId commissionPercentage status" })
       .lean();

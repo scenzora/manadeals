@@ -36,9 +36,12 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 export default async function CategoryPage({
   params,
   searchParams,
+  tenantId,
 }: {
   params: Params;
   searchParams: SearchParams;
+  /** Set when rendered inside a white-label store. */
+  tenantId?: string;
 }) {
   const { slug } = await params;
   const query = await searchParams;
@@ -60,6 +63,7 @@ export default async function CategoryPage({
       minDiscount: Number(query.discount) || undefined,
       sort: query.sort,
       page,
+      tenantId,
     }),
     Brand.find({ status: "active" }).select("name slug").sort({ name: 1 }).lean(),
     AffiliateNetwork.find({ status: "active" }).select("name code").sort({ name: 1 }).lean(),

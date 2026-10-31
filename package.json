@@ -11,6 +11,7 @@
     "seed:fresh": "tsx --env-file=.env.local scripts/seed.ts -- --fresh",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "demo:seed": "tsx --env-file=.env.local scripts/seed-demo.ts",
     "tenant:seed": "tsx --env-file=.env.local scripts/seed-tenant.ts",
     "db:sync-indexes": "tsx --env-file=.env.local scripts/sync-indexes.ts",
     "icons": "tsx scripts/generate-icons.ts",

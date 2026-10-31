@@ -6,6 +6,9 @@ import { defaultSections } from "@/lib/tenant/sections";
 import { refreshStore } from "@/lib/tenant/store.server";
 import { sanitizeTheme } from "@/lib/tenant/theme";
 import { createStoreSchema, updateStoreSchema } from "@/lib/validations/store";
+import { slugify } from "@/lib/utils/slug";
+import { seedSampleProducts } from "@/services/own-products.service";
+import Product from "@/models/Product";
 import StoreOwner from "@/models/StoreOwner";
 import Tenant from "@/models/Tenant";
 
@@ -32,6 +35,8 @@ export const POST = ownerRoute(async (request, { owner }) => {
     catalog: { sections: defaultSections() },
   });
   await StoreOwner.updateOne({ _id: owner.id }, { tenant: tenant._id });
+  // A new store starts with a few dummy products so it does not look empty.
+  await seedSampleProducts(String(tenant._id)).catch(() => 0);
 
   return ok({ id: String(tenant._id), slug: tenant.slug }, 201);
 });
@@ -71,6 +76,7 @@ export const PATCH = ownerRoute(async (request, { owner }) => {
         "affiliate.amazonAssociateTag": input.amazonAssociateTag,
         "affiliate.flipkartAffiliateId": input.flipkartAffiliateId,
         "affiliate.generic": input.generic,
+        "affiliate.custom": input.custom,
       };
       break;
     case "catalog": {
@@ -83,6 +89,24 @@ export const PATCH = ownerRoute(async (request, { owner }) => {
         "catalog.categories": input.categories,
         "catalog.dealOfTheDay": input.dealOfTheDay,
         "catalog.sections": input.sections,
+      };
+      break;
+    }
+    case "collections": {
+      // Keep only real, active catalogue products, in the order the owner chose.
+      const wanted = [...new Set(input.collections.flatMap((entry) => entry.products))];
+      const valid = new Set(
+        (await Product.find({ _id: { $in: wanted }, status: "active", tenant: { $in: [null, tenantId] } }).select("_id").lean()).map((p) => String(p._id)),
+      );
+      const used = new Set<string>();
+      update = {
+        collections: input.collections.map((entry) => {
+          const base = slugify(entry.name) || "category";
+          let slug = base;
+          for (let n = 2; used.has(slug); n += 1) slug = `${base}-${n}`;
+          used.add(slug);
+          return { name: entry.name, slug, products: entry.products.filter((id) => valid.has(id)) };
+        }),
       };
       break;
     }

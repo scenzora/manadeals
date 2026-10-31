@@ -2,7 +2,17 @@ import { z } from "zod";
 
 import { objectId } from "@/lib/validations/common";
 import { THEME_FONTS } from "@/lib/tenant/theme";
-import { GENERIC_NETWORKS, isValidAmazonTag, isValidFlipkartId, isValidGenericId } from "@/lib/affiliate/rewrite";
+import {
+  GENERIC_NETWORKS,
+  MAX_CUSTOM_RULES,
+  isValidAmazonTag,
+  isValidFlipkartId,
+  isValidGenericId,
+  isValidRuleDomain,
+  isValidRuleParam,
+  isValidRuleTemplate,
+  isValidRuleValue,
+} from "@/lib/affiliate/rewrite";
 import { SECTION_KEYS } from "@/lib/tenant/sections";
 import { validateStoreName, validateStoreSlug } from "@/lib/tenant/identity";
 
@@ -68,6 +78,29 @@ export const themeSchema = z.object({
   mode: z.enum(["light", "dark", "auto"]),
 });
 
+const customRuleSchema = z
+  .object({
+    name: z.string().trim().min(1, "Name the network").max(40),
+    domain: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .transform((value) => value.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, ""))
+      .refine(isValidRuleDomain, "Use a domain like myntra.com, or * for all other retailers"),
+    mode: z.enum(["param", "template"]),
+    param: z.string().trim().default(""),
+    value: z.string().trim().refine(isValidRuleValue, "Letters, numbers, dots, dashes and underscores only"),
+    template: z.string().trim().default(""),
+  })
+  .superRefine((rule, ctx) => {
+    if (rule.mode === "param" && !isValidRuleParam(rule.param)) {
+      ctx.addIssue({ code: "custom", path: ["param"], message: "Enter the parameter name, e.g. affid" });
+    }
+    if (rule.mode === "template" && !isValidRuleTemplate(rule.template)) {
+      ctx.addIssue({ code: "custom", path: ["template"], message: "Use an https link that contains {url}" });
+    }
+  });
+
 export const affiliateSchema = z.object({
   section: z.literal("affiliate"),
   amazonAssociateTag: z
@@ -87,6 +120,11 @@ export const affiliateSchema = z.object({
     )
     .max(Object.keys(GENERIC_NETWORKS).length)
     .refine((list) => new Set(list.map((entry) => entry.network)).size === list.length, "Use each network once"),
+  custom: z
+    .array(customRuleSchema)
+    .max(MAX_CUSTOM_RULES)
+    .refine((list) => new Set(list.map((rule) => rule.domain)).size === list.length, "One rule per retailer domain")
+    .default([]),
 });
 
 export const catalogSchema = z.object({
@@ -99,11 +137,54 @@ export const catalogSchema = z.object({
     .refine((list) => new Set(list.map((entry) => entry.key)).size === list.length, "Duplicate section"),
 });
 
+const httpUrl = z
+  .string()
+  .trim()
+  .max(1000)
+  .refine((value) => {
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" || url.protocol === "http:";
+    } catch {
+      return false;
+    }
+  }, "Enter a full link starting with https://");
+
+export const ownProductSchema = z
+  .object({
+    name: z.string().trim().min(3, "Add a product name").max(120),
+    shortDescription: z.string().trim().max(200).default(""),
+    category: objectId,
+    originalPrice: z.coerce.number().min(0).max(10_000_000),
+    salePrice: z.coerce.number().min(0).max(10_000_000),
+    image: z.union([z.literal(""), httpUrl]).default(""),
+    affiliateUrl: httpUrl,
+    availability: z.enum(["in-stock", "out-of-stock", "limited", "pre-order"]).default("in-stock"),
+    status: z.enum(["active", "inactive"]).default("active"),
+  })
+  .transform((value) => ({ ...value, originalPrice: Math.max(value.originalPrice, value.salePrice) }));
+
+export const MAX_COLLECTIONS = 20;
+export const MAX_COLLECTION_PRODUCTS = 100;
+
+export const collectionsSchema = z.object({
+  section: z.literal("collections"),
+  collections: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1, "Name every category").max(40),
+        products: z.array(objectId).max(MAX_COLLECTION_PRODUCTS),
+      }),
+    )
+    .max(MAX_COLLECTIONS),
+});
+
 export const updateStoreSchema = z.discriminatedUnion("section", [
   brandingSchema,
   themeSchema,
   affiliateSchema,
   catalogSchema,
+  collectionsSchema,
 ]);
 
 export const blogPostSchema = z.object({
