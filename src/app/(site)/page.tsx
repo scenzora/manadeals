@@ -287,6 +287,36 @@ export default async function HomePage() {
           </div>
         </Section>
       ) : null}
+
+      {/* Start your own store */}
+      <Section>
+        <div className="grid items-center gap-6 rounded-xl bg-[var(--secondary)] p-6 sm:p-10 lg:grid-cols-[1fr_auto]">
+          <div className="space-y-3">
+            <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              Create Your Own Affiliate Portal or Ecommerce Portal
+            </h2>
+            <p className="max-w-2xl text-white/70">
+              Launch your own branded store in minutes. Curate products, add your affiliate IDs,
+              connect a custom domain and start earning.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/create-website"
+              className="inline-flex items-center gap-2 rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#e85f00]"
+            >
+              Create your portal
+              <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/create-website/login"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-5 py-2.5 text-sm font-medium text-white hover:bg-white/10"
+            >
+              Owner login
+            </Link>
+          </div>
+        </div>
+      </Section>
     </>
   );
 }

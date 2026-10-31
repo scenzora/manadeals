@@ -32,7 +32,11 @@ export const PATCH = adminRoute<{ id: string }>("stores.manage", async (request,
     tenant.status = "active";
     tenant.suspendedReason = "";
   }
-  if (input.plan) tenant.plan = input.plan;
+  if (input.plan) {
+    tenant.plan = input.plan;
+    // An admin grant has no end date; billing sets one on each paid term.
+    tenant.planExpiresAt = null;
+  }
   await tenant.save();
 
   const domains = await TenantDomain.find({ tenant: id }).select("hostname").lean();

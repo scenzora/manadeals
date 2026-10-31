@@ -13,6 +13,8 @@ const TenantSchema = new Schema(
     /** StoreOwner account (added with the dashboard in phase 3). */
     owner: { type: Types.ObjectId, ref: "StoreOwner", default: null, index: true },
     plan: { type: String, enum: ["free", "pro"], default: "free", index: true },
+    /** End of the paid Pro term. Null on Pro = granted by an admin, never lapses. */
+    planExpiresAt: { type: Date, default: null, index: true },
     status: { type: String, enum: ["draft", "active", "suspended"], default: "draft", index: true },
     suspendedReason: { type: String, default: "" },
 

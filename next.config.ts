@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /** SEO-friendly public URLs for store-owner signup/login; the old paths redirect to them. */
+  async redirects() {
+    return [
+      { source: "/dashboard/signup", destination: "/create-website/signup", permanent: true },
+      { source: "/dashboard/login", destination: "/create-website/login", permanent: true },
+    ];
+  },
+  async rewrites() {
+    return [
+      { source: "/create-website/signup", destination: "/dashboard/signup" },
+      { source: "/create-website/login", destination: "/dashboard/login" },
+    ];
+  },
+
   images: {
     /**
      * Vercel's image optimizer is metered, and once the plan's quota is used up

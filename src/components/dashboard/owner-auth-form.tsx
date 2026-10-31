@@ -74,7 +74,7 @@ export function OwnerAuthForm({ mode }: { mode: "login" | "signup" }) {
 
       <p className="text-center text-sm text-[var(--muted-foreground)]">
         {signup ? "Already have a store?" : "New here?"}{" "}
-        <Link href={signup ? "/dashboard/login" : "/dashboard/signup"} className="font-medium text-[var(--primary)] underline">
+        <Link href={signup ? "/create-website/login" : "/create-website/signup"} className="font-medium text-[var(--primary)] underline">
           {signup ? "Sign in" : "Create an account"}
         </Link>
       </p>
